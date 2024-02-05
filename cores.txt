@@ -1,0 +1,6 @@
+1 = preto
+2 = azul
+3 = azul-claro
+4 = branco-cinza
+5 = branco
+6 = cinza

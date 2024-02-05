@@ -1,0 +1,3 @@
+WMCOMMAND:
+ mov   RAX, qword [wParam]                      ; RAX = ID. [RBP + 32]
+

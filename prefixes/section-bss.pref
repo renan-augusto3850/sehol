@@ -1,0 +1,10 @@
+section .bss                                    ; Uninitialized data segment
+ alignb 8
+ hInstance        resq 1
+ BackgroundBrush  resq 1
+ Font             resq 1
+ textclass         resq 1
+ Static2          resq 1
+ Edit1            resq 1
+ Edit2            resq 1
+ 

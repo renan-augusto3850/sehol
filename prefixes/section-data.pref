@@ -1,0 +1,15 @@
+section .data                                   ; Initialized data segment
+ Static1Colour    dd 0F0F0F0h                   ; Colour (0BBGGRRh)
+ Static1ColourA   dd 020A0F0h
+ Edit1TextColour  dd 0F590F5h
+ Edit1BackColour  dd backTReplace
+ Edit2TextColour  dd 0A56E3Bh
+ Edit2BackColour  dd 0FEFE8Eh
+ BackgroundColour dd backReplace   
+ WindowName       db nameReplace, 0
+ ClassName        db "Window", 0
+ SegoeUI          db "Segoe UI", 0
+ StaticClass      db "STATIC", 0
+ EditClass        db "EDIT", 0
+ ExitText         db "Você quer sair?", 0
+ 

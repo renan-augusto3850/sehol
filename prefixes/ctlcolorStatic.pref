@@ -1,0 +1,64 @@
+ jmp   Return.WM_Processed
+ 
+WMCTLCOLOREDIT:                                 ; For colouring edit controls
+ mov   RCX, qword [lParam]                      ; [RBP + 40]
+ call  GetDlgCtrlID                             ; RAX = ID
+
+ cmp   RAX, Edit1ID
+ je    .Edit1
+
+ cmp   RAX, Edit2ID
+ je    .Edit2
+
+.Default:
+ mov   ECX, NULL_BRUSH
+ call  GetStockObject                           ; Return a brush
+ jmp   Return
+
+.Edit1:
+ mov   RCX, qword [wParam]                      ; [RBP + 32]
+ mov   EDX, dword [REL Edit1TextColour]
+ call  SetTextColor
+
+ mov   RCX, qword [wParam]                      ; [RBP + 32]
+ mov   EDX, OPAQUE
+ call  SetBkMode
+
+ mov   RCX, qword [wParam]                      ; [RBP + 32]
+ mov   EDX, dword [REL Edit1BackColour]
+ call  SetBkColor
+
+ mov   ECX, NULL_BRUSH
+ call  GetStockObject                           ; Return a brush
+ jmp   Return
+
+.Edit2:
+ mov   RCX, qword [wParam]                      ; [RBP + 32]
+ mov   EDX, dword [REL Edit2TextColour]
+ call  SetTextColor
+
+ mov   RCX, qword [wParam]                      ; [RBP + 32]
+ mov   EDX, OPAQUE
+ call  SetBkMode
+
+ mov   RCX, qword [wParam]                      ; [RBP + 32]
+ mov   EDX, dword [REL Edit2BackColour]
+ call  SetBkColor
+
+ mov   ECX, NULL_BRUSH
+ call  GetStockObject                           ; Return a brush
+ jmp   Return
+
+WMCTLCOLORSTATIC:                               ; For colouring static controls
+ mov   RCX, qword [lParam]                      ; [RBP + 40]
+ call  GetDlgCtrlID                             ; RAX = ID
+
+ cmp   RAX, textId
+ je    .textclass
+
+.Default:
+ mov   ECX, NULL_BRUSH
+ call  GetStockObject                           ; Return a brush
+ jmp   Return
+
+

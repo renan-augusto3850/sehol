@@ -1,0 +1,16 @@
+.textclass:
+ mov   RCX, qword [wParam]                      ; [RBP + 32]
+ mov   EDX, dword [REL textColReplace]
+ call  SetTextColor
+
+ mov   RCX, qword [wParam]                      ; [RBP + 32]
+ mov   EDX, OPAQUE
+ call  SetBkMode
+
+ mov   RCX, qword [wParam]                      ; [RBP + 32]
+ mov   EDX, [REL textBackReplace]
+ call  SetBkColor
+
+ mov   ECX, NULL_BRUSH
+ call  GetStockObject                           ; Return a brush
+ jmp   Return

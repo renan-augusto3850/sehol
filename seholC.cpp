@@ -5,13 +5,13 @@
 #include <string>
 using namespace std;
 
-string replaceValue(string code, string value, string data) {
+string replaceValue(string windowcode, string value, string data) {
     size_t pos = 0;
-    while ((pos = code.find(value, pos)) != string::npos) {
-        code.replace(pos, value.length(), data);
+    while ((pos = windowcode.find(value, pos)) != string::npos) {
+        windowcode.replace(pos, value.length(), data);
         pos += data.length();
     }
-    return code;
+    return windowcode;
 }
 
 
@@ -37,7 +37,10 @@ int main(int argc, char *argv[]){
         string secBss = getPrefixes("section-bss.pref");
         string secText = getPrefixes("section-text.pref");
         string footer = getPrefixes("final.pref");
-        string code;
+        string messageListener = getPrefixes("messagesListener.pref");
+        string wm_command = getPrefixes("wmcommand.pref");
+        string ctlcolorStatic = getPrefixes("ctlcolorStatic.pref");
+        string windowcode;
         string line;
         string codeColor = "0xFFFFFF";
         const char* drawWindow = "drawWindow";
@@ -85,7 +88,7 @@ int main(int argc, char *argv[]){
                     resultCommaWidth = completeline.substr(indexCommaWidth1 + 1, indexCommaWidth2 - indexCommaWidth1 - 1);
                     resultCommaHeigth = completeline.substr(indexCommaWidth2 + 2);
                     cout << "Você criou o elemento drawWindow com: " << resultName << " " << resultCommaWidth << " " << resultCommaHeigth << endl;
-                    code += getPrefixes("drawWindow.pref");
+                    windowcode += getPrefixes("drawWindow.pref");
                     if(completeline.find("{")){
                         braceFinded = 1;
                         element = "drawWindow";
@@ -103,26 +106,29 @@ int main(int argc, char *argv[]){
                     size_t pos2 = line.find("(");
                     TextId = line.substr(pos1 + 1, pos2 - pos1 - 1);
                     cout << "Você criou o elemento drawText com: " << resultText << " E id: " << TextId << endl;
-                    code += getPrefixes("drawText.pref");
+                    windowcode += getPrefixes("drawText.pref");
                     secData += " " + TextId + "Text      db " + resultText + ", 0 \n";
                     secData += " " + TextId + "Colour       dd " + textColour + ", 0 \n";
                     secData += " " + TextId + "BackColour       dd " + textBackColor + ", 0 \n";
-                    //code.replace(code.find("textReplace"), 11, TextId);
-                    code = replaceValue(code, "textReplace", TextId + "Text");
-                    //code.replace(code.find("textIdReplace"), 13, TextId);
-                    code = replaceValue(code, "textColour", TextId + "Colour");
-                    code = replaceValue(code, "textBackColourA", TextId + "BackColour");
+                    //windowcode.replace(windowcode.find("textReplace"), 11, TextId);
+                    windowcode = replaceValue(windowcode, "textReplace", TextId + "Text");
+                    wm_command += replaceValue(getPrefixes("textClass.pref"), "textReplace", TextId + "Text");
+                    //windowcode.replace(windowcode.find("textIdReplace"), 13, TextId);
+                    wm_command = replaceValue(wm_command, "textColour", TextId + "Colour");
+                    wm_command = replaceValue(wm_command, "textBackColourA", TextId + "BackColour");
+                    wm_command = replaceValue(wm_command, "textclass", TextId);
+                    wm_command = replaceValue(wm_command, "textId", TextId + "Id");
                     definitions += TextId + "Id            EQU " + to_string(generator);
                     generator++;
-                    code = replaceValue(code, "textId", TextId + "Id");
-                    footer = replaceValue(footer, "textId", TextId + "Id");
-                    footer = replaceValue(footer, "textclass", TextId);
-                    secBss = replaceValue(secBss, "textclass", TextId);
-                    code = replaceValue(code, "textclass", TextId);
-                    footer = replaceValue(footer, "textColorReplace", "static" + TextId);
-                    footer = replaceValue(footer, "textColReplace", TextId + "Colour");
-                    footer = replaceValue(footer, "textBackReplace", TextId + "BackColour");
-
+                    windowcode = replaceValue(windowcode, "textId", TextId + "Id");
+                    ctlcolorStatic = replaceValue(ctlcolorStatic, "textclass", TextId);
+                    ctlcolorStatic += replaceValue(getPrefixes("textColor.pref"), "textclass", TextId);
+                    secBss += "\n " + TextId + "            resq 1 \n"; 
+                    windowcode = replaceValue(windowcode, "textclass", TextId);
+                    ctlcolorStatic = replaceValue(ctlcolorStatic, "textColorReplace", "static" + TextId);
+                    ctlcolorStatic = replaceValue(ctlcolorStatic, "textColReplace", TextId + "Colour");
+                    ctlcolorStatic = replaceValue(ctlcolorStatic, "textBackReplace", TextId + "BackColour");
+                    ctlcolorStatic = replaceValue(ctlcolorStatic, "textId", TextId + "Id");
                     if(completeline.find("{")){
                         braceFinded = 1;
                         element = "drawText";
@@ -140,14 +146,14 @@ int main(int argc, char *argv[]){
                     size_t pos2 = line.find("(");
                     ButtonId = line.substr(pos1 + 1, pos2 - pos1 - 1);
                     cout << "Você criou o elemento drawButton com: " << resultButton << " E id: " << ButtonId << endl;
-                    code += getPrefixes("drawButton.pref");
+                    windowcode += getPrefixes("drawButton.pref");
                     definitions += "\n" + ButtonId + "Id         EQU " + to_string(generator);
-                    secBss += "\n" + ButtonId + "           resq 1";
+                    secBss += "\n" + ButtonId + "           resq 1 \n";
                     generator++;
                     secData += " " + ButtonId + "Text         db " + resultButton + ", 0 \n";
                     secData += " buttonClass             db \"BUTTON\", 0 \n";
-                    code = replaceValue(code, "buttonText", ButtonId + "Text");
-                    code = replaceValue(code, "buttonId", ButtonId + "Id");
+                    windowcode = replaceValue(windowcode, "buttonText", ButtonId + "Text");
+                    windowcode = replaceValue(windowcode, "buttonId", ButtonId + "Id");
                     if(completeline.find("{")){
                         braceFinded = 1;
                         element = "drawButton";
@@ -226,19 +232,19 @@ int main(int argc, char *argv[]){
                     }
                 }
             }
-                /*if(codeFinal.is_open()){
+                if(codeFinal.is_open()){
                     if(type == "window"){
                         definitions = replaceValue(definitions, "widthReplace", resultCommaWidth);
                         definitions = replaceValue(definitions, "heigthReplace", resultCommaHeigth);
                         secData.replace(secData.find("nameReplace"), 11, '"' + resultName + '"');
                         secData.replace(secData.find("backReplace"), 11, codeColor);
                         secData.replace(secData.find("backTReplace"), 12, codeColor);
-                        code = replaceValue(code, "buttonWidth", to_string(ButtonWidth));
-                        code = replaceValue(code, "buttonHeigth", to_string(ButtonHeigth));
-                        code = replaceValue(code, "buttonX", to_string(ButtonX));
-                        code = replaceValue(code, "buttonY", to_string(ButtonY));
+                        windowcode = replaceValue(windowcode, "buttonWidth", to_string(ButtonWidth));
+                        windowcode = replaceValue(windowcode, "buttonHeigth", to_string(ButtonHeigth));
+                        windowcode = replaceValue(windowcode, "buttonX", to_string(ButtonX));
+                        windowcode = replaceValue(windowcode, "buttonY", to_string(ButtonY));
                     }
-                    codeFinal << definitions << head << secData << secBss << secText << code << footer;
+                    codeFinal << definitions << head << secData << secBss << secText << messageListener << wm_command << windowcode << ctlcolorStatic << footer;
                     codeFinal.close();
                     string comNasm = "nasm -f win64 codeFinal.asm -o " + programName + ".obj";
                     string comGolink = "golink /entry:Start kernel32.dll user32.dll gdi32.dll " + programName + ".obj";
@@ -254,7 +260,7 @@ int main(int argc, char *argv[]){
                 } else{
                     cerr << "Erro ao escrever um arquivo!" << endl;
                     return 1;
-                }*/
+                }
             }
     } else{
         cerr << "Nenhum arquivo foi passado: seholC <nome_do_arquivo>";

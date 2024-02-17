@@ -3,6 +3,7 @@
 #include <fstream>
 #include <ostream>
 #include <string>
+#include <tuple>
 using namespace std;
 
 string replaceValue(string windowcode, string value, string data) {
@@ -13,7 +14,6 @@ string replaceValue(string windowcode, string value, string data) {
     }
     return windowcode;
 }
-
 
 string getPrefixes(string name){
     ifstream prefixes;
@@ -26,6 +26,32 @@ string getPrefixes(string name){
         }
     }
     return codePrefix;
+}
+
+tuple<string, string, string, bool> devolveSolution(string name, string id){
+    tuple<string, string, string, bool> content;
+    if(name.find("drawMessageBox") != string::npos){
+        size_t pos1 = name.find("(");
+        size_t pos2 = name.find(")");
+        string text = name.substr(pos1 + 1, pos2 - pos1 - 1);
+        size_t pose1 = name.find(",");
+        size_t pose2 = name.find(")");
+        string actions = name.substr(pose1 + 1, pose2 - pose1 - 1);
+        cout << "Action: " << actions << endl;
+        string messageBox = getPrefixes("drawMessageBox.pref");
+        if(actions == " YES_NO"){
+            messageBox = replaceValue(messageBox, "actionReplace", "MB_YESNO");
+        }
+        if(actions == " OK"){
+            messageBox = replaceValue(messageBox, "actionReplace", "MB_OK");
+        }
+        if(actions == " OK_CANCEL"){
+            messageBox = replaceValue(messageBox, "actionReplace", "MB_OKCANCEL");
+        }
+        messageBox = replaceValue(messageBox, "ExitTextReplace", id + "ExitText");
+        content = make_tuple(messageBox, id + "ExitText          db textReplace", text, true);
+    }
+    return content;
 }
 
 int main(int argc, char *argv[]){
@@ -62,6 +88,7 @@ int main(int argc, char *argv[]){
         bool haveText = false;
         bool isBehind = false;
         string nameArchive(nameArchiveC);
+        string wm_command_definitions;
         file.open(nameArchive);
         ofstream codeFinal("codeFinal.asm");
         string programName = nameArchive.erase(nameArchive.size() - 3);
@@ -70,6 +97,7 @@ int main(int argc, char *argv[]){
         string textColour = "0x000000";
         string textBackColor = "0xFFFFFF";
         string TextId;
+        string clickHereId;
         string resultButton;
         int generator = 104;
         if(file.is_open()){
@@ -112,11 +140,12 @@ int main(int argc, char *argv[]){
                     secData += " " + TextId + "BackColour       dd " + textBackColor + ", 0 \n";
                     //windowcode.replace(windowcode.find("textReplace"), 11, TextId);
                     windowcode = replaceValue(windowcode, "textReplace", TextId + "Text");
-                    wm_command += replaceValue(getPrefixes("textClass.pref"), "textReplace", TextId + "Text");
+                    wm_command_definitions += replaceValue(getPrefixes("textClass.pref"), "textReplace", TextId + "Text");
                     //windowcode.replace(windowcode.find("textIdReplace"), 13, TextId);
-                    wm_command = replaceValue(wm_command, "textColour", TextId + "Colour");
-                    wm_command = replaceValue(wm_command, "textBackColourA", TextId + "BackColour");
+                    wm_command_definitions = replaceValue(wm_command_definitions, "textColour", TextId + "Colour");
+                    wm_command_definitions = replaceValue(wm_command_definitions, "textBackColourA", TextId + "BackColour");
                     wm_command = replaceValue(wm_command, "textclass", TextId);
+                    wm_command_definitions = replaceValue(wm_command_definitions, "textclass", TextId);
                     wm_command = replaceValue(wm_command, "textId", TextId + "Id");
                     definitions += TextId + "Id            EQU " + to_string(generator);
                     generator++;
@@ -169,6 +198,17 @@ int main(int argc, char *argv[]){
                     size_t pos2 = line.find(")");
                     string clickHereEventId = line.substr(pos1 + 1, pos2 - pos1 - 1);
                     cout << "Aplicando ação caso seja clicado " << clickHereEventId << endl;
+                    wm_command += "\n" + getPrefixes("ifClickevent.pref");
+                    wm_command = replaceValue(wm_command, "elementId", clickHereEventId + "Id");
+                    wm_command = replaceValue(wm_command, "elementClass", clickHereEventId);
+                    wm_command_definitions += "." + clickHereEventId + ": \n";
+                    if(line.find("{") != string::npos){
+                        braceFinded = 1;
+                        element = "ifClickEvent";
+                        size_t pose1 = line.find("(");
+                        size_t pose2 = line.find(")");
+                        clickHereId = line.substr(pose1 + 1, pose2 - pose1 - 1);
+                    }
                 }
                 if(braceFinded == 1){
                     if(line == "}"){
@@ -227,6 +267,20 @@ int main(int argc, char *argv[]){
                             cout << "Você definiu drawButton com eixo X de: " << value << endl;
                             ButtonX =  stoi(value);
                         }
+                    } 
+                    if(element == "ifClickEvent"){
+                        tuple<string, string, string, bool> received = devolveSolution(line, clickHereId);
+                        string content = get<0>(received);
+                        wm_command_definitions += "\n" + content;
+                        cout << get<1>(received) << get<2>(received) << get<3>(received) << endl;
+                        if(get<3>(received) == true){
+                            secData += "\n " + get<1>(received);
+                            string text = get<2>(received);
+                            size_t pos1 = line.find("\"");
+                            size_t pos2 = line.find(",");
+                            string finaltext = line.substr(pos1 + 1, pos2 - pos1 - 1);
+                            secData = replaceValue(secData, "textReplace", "\"" + finaltext + ", 0 \n");
+                        }
                     } else {
                         cout << "Estilo não encontrado" << endl;
                     }
@@ -244,7 +298,7 @@ int main(int argc, char *argv[]){
                         windowcode = replaceValue(windowcode, "buttonX", to_string(ButtonX));
                         windowcode = replaceValue(windowcode, "buttonY", to_string(ButtonY));
                     }
-                    codeFinal << definitions << head << secData << secBss << secText << messageListener << wm_command << windowcode << ctlcolorStatic << footer;
+                    codeFinal << definitions << head << secData << secBss << secText << messageListener << wm_command << wm_command_definitions << windowcode << ctlcolorStatic << footer;
                     codeFinal.close();
                     string comNasm = "nasm -f win64 codeFinal.asm -o " + programName + ".obj";
                     string comGolink = "golink /entry:Start kernel32.dll user32.dll gdi32.dll " + programName + ".obj";

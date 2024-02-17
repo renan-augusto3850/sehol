@@ -1,0 +1,2 @@
+ cmp AX, elementId
+ je  .elementClass

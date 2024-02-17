@@ -12,5 +12,5 @@ drawButton showButton("Clique em mim") {
 }
 @behind
 ifClickEvent(showButton) {
-    drawMessageBox("Ola tudo bem?", YES_NO);
+    drawMessageBox("Ola estou bem tambem esta?", YES_NO);
 }

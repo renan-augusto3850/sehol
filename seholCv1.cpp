@@ -57,13 +57,14 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
             if (firstChildren) {
                 firstChildren = children;
                 node->firstChildren = children;
-                cout << "Primeira criança definida" << endl;
+                cout << "Primeira criança definida background-color" << endl;
             } else {
                 AstChildren* currentChild = firstChildren;
                 while (!currentChild->nextChildren->name.empty()) {
                     currentChild = currentChild->nextChildren;
                 }
                 node->firstChildren->nextChildren = children;
+                currentChild->nextChildren = children;
                 cout << "A Proxima criança foi definida" << endl;
             }
         }
@@ -87,13 +88,14 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
             if (firstChildren) {
                 firstChildren = children;
                 node->firstChildren = children;
-                cout << "Primeira criança definida" << endl;
+                cout << "Primeira criança definida color" << endl;
             } else {
-                AstChildren* currentChild = firstChildren;
+                currentChild = firstChildren;
                 while (currentChild) {
                     currentChild = currentChild->nextChildren;
                 }
                 node->firstChildren->nextChildren = children;
+                currentChild->nextChildren = children;
                 cout << "A Proxima criança foi definida" << endl;
             }
         }
@@ -117,14 +119,15 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
             if (firstChildren) {
                 firstChildren = children;
                 node->firstChildren = children;
-                cout << "Primeira criança definida" << endl;
+                cout << "Primeira criança definida width" << endl;
             } else {
-                AstChildren* currentChild = firstChildren;
+                currentChild = firstChildren;
                 while (currentChild) {
                     currentChild = currentChild->nextChildren;
                 }
                 currentChild->nextChildren = children;
                 node->firstChildren->nextChildren = currentChild;
+                currentChild->nextChildren = children;
                 cout << "A Proxima criança foi definida" << endl;
             }
         }
@@ -135,16 +138,17 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
             children->finalLine = childrenLine;
             children->type = "heightValue";
             children->params = {expression.substr(expression.find("height") + 8)};
-            if (firstChildren) {
+            if (firstChildren->name.empty()) {
                 firstChildren = children;
                 node->firstChildren = children;
-                cout << "Primeira criança definida" << endl;
+                cout << "Primeira criança definida heigth" << endl;
             } else {
-                AstChildren* currentChild = firstChildren;
-                while (currentChild) {
+                currentChild = firstChildren;
+                while (currentChild->nextChildren) {
                     currentChild = currentChild->nextChildren;
                 }
-                node->firstChildren->nextChildren = children;
+                currentChild->nextChildren = children;
+                node->firstChildren = currentChild;
                 cout << "A Proxima criança foi definida" << endl;
             }
         }
@@ -155,16 +159,17 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
             children->finalLine = childrenLine;
             children->type = "xAxisValue";
             children->params = {expression.substr(expression.find("x") + 2)};
-            if (firstChildren) {
+            if (firstChildren->name.empty()) {
                 firstChildren = children;
                 node->firstChildren = children;
-                cout << "Primeira criança definida" << endl;
+                cout << "Primeira criança definida x" << endl;
             } else {
-                AstChildren* currentChild = firstChildren;
-                while (currentChild) {
+                currentChild = firstChildren;
+                while (currentChild->nextChildren) {
                 currentChild = currentChild->nextChildren;
                 }
-            node->firstChildren->nextChildren = children;
+            currentChild->nextChildren = children;
+            node->firstChildren = currentChild;
             cout << "A Proxima criança foi definida" << endl;
             }
         }
@@ -178,13 +183,14 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
             if (firstChildren->name.empty()) {
                 firstChildren = children;
                 node->firstChildren = children;
-                cout << "Primeira criança definida" << endl;
+                cout << "Primeira criança definida y" << endl;
             } else {
                 currentChild = node->firstChildren;
-                while (currentChild) {
+                while (currentChild->nextChildren) {
                     currentChild = currentChild->nextChildren;
                 }
-                node->firstChildren->nextChildren = children;
+                currentChild->nextChildren = children;
+                node->firstChildren = currentChild;
                 cout << "A Proxima criança foi definida" << endl;
             }
         }
@@ -193,7 +199,6 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
 }
 
 void printChildren(const AstChildren* primeiraCrianca) {
-    cout << primeiraCrianca->name << endl;
     const AstChildren* currentChild = primeiraCrianca;
         cout << "Child: " << currentChild->type;
         cout << ": " << currentChild->name;
@@ -208,7 +213,7 @@ void printChildren(const AstChildren* primeiraCrianca) {
 
         currentChild = currentChild->nextChildren;
         if(currentChild){
-            printChildren(currentChild->firstChildren);
+            printChildren(currentChild);
         } else{
             cout << "Acabou" << endl;
         }

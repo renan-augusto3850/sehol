@@ -6,7 +6,7 @@ drawText welcome("Welcome here!") {
 }
 drawButton clickHere("Click Here!") {
     width: 100
-    heigth: 50
+    height: 50
     x: 200
     y: 200
 }

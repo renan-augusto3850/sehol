@@ -6,24 +6,14 @@
 #include <vector>
 using namespace std;
 
-struct AstChildren{
-    string name;
-    int startLine;
-    int finalLine;
-    string type;
-    vector<string> params;
-    AstChildren* firstChildren;
-    AstChildren* nextChildren;
-    AstChildren() : nextChildren(nullptr) {}
-};
-
 struct AstNode{
     string name;
     int startLine;
     int finalLine;
     string type;
     vector<string> params;
-    AstChildren* firstChildren;
+    string SimpleChildren[3];
+    string childrens[4][3];
     AstNode* nextNode;
     AstNode() : nextNode(nullptr) {}
 };
@@ -31,9 +21,6 @@ struct AstNode{
 
 AstNode* parser(string expression, int startLine, int finalLine, int childrenLine){
     AstNode* node = new AstNode();
-    AstChildren* newChildren = new AstChildren();
-    AstChildren* firstChildren;
-    AstChildren* currentChild;
     if(expression.find("drawWindow") != string::npos){
         int indexName1 = expression.find("\"");
         int indexName2 = expression.find("\"", indexName1 + 1);
@@ -48,25 +35,11 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
         node->type = "drawWindowElement";
         node->params = {resultName + "," + resultCommaWidth + "," + resultCommaHeigth};
         if(expression.find("background-color") != string::npos && expression.find("background-color") > expression.find("{")){
-            AstChildren* children = new AstChildren();
-            children->name = "background-color";
-            children->startLine = childrenLine;
-            children->finalLine = childrenLine;
-            children->type = "backgroundChange";
-            children->params = {expression.substr(expression.find("background-color") + 17)};
-            if (firstChildren) {
-                firstChildren = children;
-                node->firstChildren = children;
-                cout << "Primeira criança definida background-color" << endl;
-            } else {
-                AstChildren* currentChild = firstChildren;
-                while (!currentChild->nextChildren->name.empty()) {
-                    currentChild = currentChild->nextChildren;
-                }
-                node->firstChildren->nextChildren = children;
-                currentChild->nextChildren = children;
-                cout << "A Proxima criança foi definida" << endl;
-            }
+            string SimpleChildren[3] = {"backgroundChange",expression.substr(expression.find("background-color") + 18).c_str(), to_string(childrenLine).c_str()};
+            node->SimpleChildren[0] = SimpleChildren[0];
+            node->SimpleChildren[1] = SimpleChildren[1];
+            node->SimpleChildren[2] = SimpleChildren[2];
+            cout << node->SimpleChildren[1] << endl;
         }
     }
     if(expression.find("drawText") != string::npos){
@@ -79,25 +52,10 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
         node->type = "drawTextElement";
         node->params = {resultText};
         if(expression.find("color") != string::npos && expression.find("color") > expression.find("{")){
-            AstChildren* children = new AstChildren();
-            children->name = "color";
-            children->startLine = childrenLine;
-            children->finalLine = childrenLine;
-            children->type = "colorChange";
-            children->params = {expression.substr(expression.find("color") + 17)};
-            if (firstChildren) {
-                firstChildren = children;
-                node->firstChildren = children;
-                cout << "Primeira criança definida color" << endl;
-            } else {
-                currentChild = firstChildren;
-                while (currentChild) {
-                    currentChild = currentChild->nextChildren;
-                }
-                node->firstChildren->nextChildren = children;
-                currentChild->nextChildren = children;
-                cout << "A Proxima criança foi definida" << endl;
-            }
+            const char* SimpleChildren[3] = {"colorChange", expression.substr(expression.find("color") + 7).c_str(), to_string(childrenLine).c_str()};
+            node->SimpleChildren[0] = SimpleChildren[0];
+            node->SimpleChildren[1] = SimpleChildren[1];
+            node->SimpleChildren[2] = SimpleChildren[2];
         }
     }
     if(expression.find("drawButton") != string::npos){
@@ -110,134 +68,70 @@ AstNode* parser(string expression, int startLine, int finalLine, int childrenLin
         node->type = "drawButtonElement";
         node->params = {resultButton};
         if(expression.find("width") != string::npos && expression.find("width") > expression.find("{")){
-            AstChildren* children = new AstChildren();
-            children->name = "width";
-            children->startLine = childrenLine;
-            children->finalLine = childrenLine;
-            children->type = "widthValue";
-            children->params = {expression.substr(expression.find("width") + 9)};
-            if (firstChildren) {
-                firstChildren = children;
-                node->firstChildren = children;
-                cout << "Primeira criança definida width" << endl;
-            } else {
-                currentChild = firstChildren;
-                while (currentChild) {
-                    currentChild = currentChild->nextChildren;
-                }
-                currentChild->nextChildren = children;
-                node->firstChildren->nextChildren = currentChild;
-                currentChild->nextChildren = children;
-                cout << "A Proxima criança foi definida" << endl;
+            node->childrens[0][0] = "widthValue";
+            node->childrens[0][1] = expression.substr(expression.find("width") + 7, 3).c_str();
+            node->childrens[0][2] = to_string(childrenLine).c_str();
             }
         }
-        if(expression.find("height") != string::npos && expression.find("height") > expression.find("{")){
-            AstChildren* children = new AstChildren();
-            children->name = "height";
-            children->startLine = childrenLine;
-            children->finalLine = childrenLine;
-            children->type = "heightValue";
-            children->params = {expression.substr(expression.find("height") + 8)};
-            if (firstChildren->name.empty()) {
-                firstChildren = children;
-                node->firstChildren = children;
-                cout << "Primeira criança definida heigth" << endl;
-            } else {
-                currentChild = firstChildren;
-                while (currentChild->nextChildren) {
-                    currentChild = currentChild->nextChildren;
-                }
-                currentChild->nextChildren = children;
-                node->firstChildren = currentChild;
-                cout << "A Proxima criança foi definida" << endl;
-            }
+        if(expression.find("heigth") != string::npos && expression.find("height") > expression.find("{")){
+            node->childrens[1][0] = "heigthValue";
+            node->childrens[1][1] = expression.substr(expression.find("heigth") + 8).c_str();
+            node->childrens[1][2] = to_string(childrenLine).c_str();
         }
         if(expression.find("x") != string::npos && expression.find("x") > expression.find("{")){
-            AstChildren* children = new AstChildren();
-            children->name = "x-axis";
-            children->startLine = childrenLine;
-            children->finalLine = childrenLine;
-            children->type = "xAxisValue";
-            children->params = {expression.substr(expression.find("x") + 2)};
-            if (firstChildren->name.empty()) {
-                firstChildren = children;
-                node->firstChildren = children;
-                cout << "Primeira criança definida x" << endl;
-            } else {
-                currentChild = firstChildren;
-                while (currentChild->nextChildren) {
-                currentChild = currentChild->nextChildren;
-                }
-            currentChild->nextChildren = children;
-            node->firstChildren = currentChild;
-            cout << "A Proxima criança foi definida" << endl;
-            }
+            node->childrens[2][0] = "xAxis";
+            node->childrens[2][1] = expression.substr(expression.find("x") + 3, 3).c_str();
+            node->childrens[2][2] = to_string(childrenLine).c_str();
         }
         if(expression.find("y") != string::npos && expression.find("y") > expression.find("{")){
-            AstChildren* children = new AstChildren();
-            children->name = "y-axis";
-            children->startLine = childrenLine;
-            children->finalLine = childrenLine;
-            children->type = "yAxisValue";
-            children->params = {expression.substr(expression.find("y") + 2)};
-            if (firstChildren->name.empty()) {
-                firstChildren = children;
-                node->firstChildren = children;
-                cout << "Primeira criança definida y" << endl;
-            } else {
-                currentChild = node->firstChildren;
-                while (currentChild->nextChildren) {
-                    currentChild = currentChild->nextChildren;
-                }
-                currentChild->nextChildren = children;
-                node->firstChildren = currentChild;
-                cout << "A Proxima criança foi definida" << endl;
-            }
+            node->childrens[3][0] = "yAxis";
+            node->childrens[3][1] = expression.substr(expression.find("y") + 3, 3).c_str();
+            node->childrens[3][2] = to_string(childrenLine).c_str();
         }
-    }
     return node;
 }
 
-void printChildren(const AstChildren* primeiraCrianca) {
-    const AstChildren* currentChild = primeiraCrianca;
-        cout << "Child: " << currentChild->type;
-        cout << ": " << currentChild->name;
-        cout << " (linha " << currentChild->startLine << ")";
-        if (!currentChild->params.empty()) {
-            cout << " [Parâmetros: ";
-            for (const auto& param : currentChild->params)
-                cout << param << " ";
-            cout << "]";
+/*bool grammarAnalisis(string childrens[3]) {
+
+}*/
+class grammarBidimensionalProcess {
+    public:
+        bool checkisInt(string value) {
+            for (char c : value) {
+                if (!std::isdigit(c)) {
+                    return false;
+                }
+            }
+            return true;
         }
-        cout << endl;
-
-        currentChild = currentChild->nextChildren;
-        if(currentChild){
-            printChildren(currentChild);
-        } else{
-            cout << "Acabou" << endl;
+        bool checkhaveQuiote(string value) {
+            if(value.find("\"") != string::npos){
+                return true;
+            }
+            return false;
         }
+};
 
-}
-
-
-void printAST(const AstNode* node, int depth = 0) {
-    for (int i = 0; i < depth; ++i)
-        cout << "  "; 
-
-    cout << "Element: " << node->type;
-    if (!node->name.empty())
-        cout << ": " << node->name;
-    cout << " , linha " << node->startLine << ",";
-    if (!node->params.empty()) {
-        cout << " Parâmetros: ";
-        for (const auto& param : node->params)
-            cout << param << " ";
-        cout << ";";
+bool grammarAnalisisBidmensional(const string (&childrens)[4][3]) {
+    bool pass = true;
+    grammarBidimensionalProcess process;
+    for(int i = 0; i < 4; i++) {
+        string name = childrens[i][0];
+        if(name == "widthValue") {
+            if(!process.checkisInt(childrens[i][1])){
+                cerr <<  "\033[31m" << "SeholGrammarError<" << childrens[i][2] << ">: Width value must be a Integer." << "\033[0m" << endl;
+                cerr << "   Recomendations: Remove any letters or unknown characters." << endl;
+                pass = false;
+            }
+            if(process.checkhaveQuiote(childrens[i][1])) {
+                cerr <<  "\033[31m" << "SeholGrammarError<" << childrens[i][2] << ">: Width value must be a Integer." << "\033[0m" << endl;
+                cerr << "\033[4m   " + childrens[i][1] << "\033[0m" << endl;
+                cerr << "       Recomendations: You just have quiotes, remove them." << endl;
+                pass = false;
+            }
+        }
     }
-    cout << endl;
-    cout << "Vamos imprimir as childens" << endl;
-    printChildren(node->firstChildren);
+    return pass;
 }
 
 int main(int argc, char *argv[]){
@@ -265,8 +159,26 @@ int main(int argc, char *argv[]){
                 }
                 if(line.find("}") != string::npos){
                     expression = parser(archive, startline, lineCout, childrenLine);
-                    cout << "Vamos imprimir o node" << endl;
-                    printAST(expression);
+                    archive = "";
+                    if(!expression->SimpleChildren[0].empty() && expression->type != "drawButtonElement") {
+                        for(int i = 0; i < 3; i++) { 
+                            switch(i) {
+                                case 0:
+                                    cout << "Type: ";
+                                case 1:
+                                    cout << "Value: ";
+                                case 2:
+                                    cout << "Line: ";
+                                default:
+                                    cout << "Not Finded";
+                            }
+                            cout << expression->SimpleChildren[i] << endl;
+                        }   
+                    } else {
+                        if(grammarAnalisisBidmensional(expression->childrens)){
+                            cout << "Passed" << endl;
+                        }
+                    }
                     validator = 0;
                 }
                 lineCout++;

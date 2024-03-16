@@ -1,0 +1,19 @@
+{
+    "scopeName": "source.Sehol",
+    "fileTypes": ["Sehol"],
+    "patterns": [
+        {
+            "name": "keyword.control.Sehol",
+            "match": "\\b(if|else|while)\\b"
+        },
+        {
+            "name": "variable.Sehol",
+            "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        },
+        {
+            "name": "comment.line.Sehol",
+            "begin": "#",
+            "end": "$"
+        }
+    ]
+}

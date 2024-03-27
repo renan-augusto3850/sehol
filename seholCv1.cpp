@@ -118,7 +118,6 @@ class grammarProcess {
 };
 
 bool grammarAnalisis(const string (&atributes)[4][4]) {
-    cout << "Grammar" << endl;
     bool pass = true;
     grammarProcess process;
     for(int i = 0; i < 4; i++) {
@@ -235,9 +234,7 @@ void generateCodeFinal(AstElement* elements[3]) {
     string TextId;
     int generator = 104;
     string resultName;
-    cout << "Generating" << endl;
     for(int i = 0; i < 3; i++) {
-        cout << "Number: " << i << "Element: " << elements[i]->type << endl;
         if(elements[i]->type == "drawWindowElement" && isBehind == false){
             //type = "window";
             string params = elements[i]->params[0];
@@ -249,7 +246,6 @@ void generateCodeFinal(AstElement* elements[3]) {
             string resultCommaWidth = completeline.substr(indexCommaWidth1 + 1, indexCommaWidth2 - indexCommaWidth1 - 1);
             string resultCommaHeigth = completeline.substr(indexCommaWidth2 + 2);
             windowcode += getPrefixes("drawWindow.pref");
-            cout << "Você criou o elemento drawWindow com: " << resultName << " " << resultCommaWidth << " " << resultCommaHeigth << endl;
             /*if(completeline.find("{")){
                 int braceFinded = 1;
                 string element = "drawWindow";
@@ -259,14 +255,12 @@ void generateCodeFinal(AstElement* elements[3]) {
             type = "window";
             string completeline = elements[i]->completeLine;
             string erasedLine = completeline.erase(completeline.size() - 4);
-            cout << "line command: " << completeline << " Size: " << completeline.size() << endl;
             int indexText1 = completeline.find("\"");
-            int indexText2 = completeline.find("\"", indexText1);
+            int indexText2 = completeline.find(")") - 1;
             string resultText = "\"" + completeline.substr(indexText1 + 1, indexText2 - indexText1 - 1) + "\"";
             size_t pos1 = completeline.find(" ");
             size_t pos2 = completeline.find("(");
             string TextId = completeline.substr(pos1 + 1, pos2 - pos1 - 1);
-            cout << "Você criou o elemento drawText com: " << resultText << " E id: " << TextId << endl;
             windowcode += getPrefixes("drawText.pref");
             secData += " " + TextId + "Text      db " + resultText + ", 0 \n";
             secData += " " + TextId + "Colour       dd " + textColour + ", 0 \n";
@@ -298,14 +292,12 @@ void generateCodeFinal(AstElement* elements[3]) {
             //type = "window";
             string completeline = elements[i]->completeLine;
             string erasedLine = completeline.erase(completeline.size() - 4);
-            cout << "line command: " << completeline << " Size: " << completeline.size() << endl;
             int indexText1 = completeline.find("\"");
-            int indexText2 = completeline.find("\"", indexText1);
+            int indexText2 = completeline.find(")") - 1;
             string resultButton = "\"" + completeline.substr(indexText1 + 1, indexText2 - indexText1 - 1) + "\"";
             size_t pos1 = completeline.find(" ");
             size_t pos2 = completeline.find("(");
             string ButtonId = completeline.substr(pos1 + 1, pos2 - pos1 - 1);
-            cout << "Você criou o elemento drawButton com: " << resultButton << " E id: " << ButtonId << endl;
             windowcode += getPrefixes("drawButton.pref");
             definitions += "\n" + ButtonId + "Id         EQU " + to_string(generator);
             secBss += "\n" + ButtonId + "           resq 1 \n";
@@ -319,22 +311,22 @@ void generateCodeFinal(AstElement* elements[3]) {
                 element = "drawButton";
             }*/
         }
-        if(codeFinal.is_open()){
-            if(type == "window"){
-                definitions = replaceValue(definitions, "widthReplace", resultCommaWidth);
-                definitions = replaceValue(definitions, "heigthReplace", resultCommaHeigth);
-                secData.replace(secData.find("nameReplace"), 11, '"' + resultName + '"');
-                secData.replace(secData.find("backReplace"), 11, codeColor);
-                secData.replace(secData.find("backTReplace"), 12, codeColor);
-                windowcode = replaceValue(windowcode, "buttonWidth", to_string(ButtonWidth));
-                windowcode = replaceValue(windowcode, "buttonHeigth", to_string(ButtonHeigth));
-                windowcode = replaceValue(windowcode, "buttonX", to_string(ButtonX));
-                windowcode = replaceValue(windowcode, "buttonY", to_string(ButtonY));
-            }
+        //return definitions + head + secData + secBss + secText + messageListener + wm_command + wm_command_definitions + windowcode + ctlcolorStatic + footer;
+    }
+    if(codeFinal.is_open()){
+        if(type == "window"){
+            definitions = replaceValue(definitions, "widthReplace", resultCommaWidth);
+            definitions = replaceValue(definitions, "heigthReplace", resultCommaHeigth);
+            secData.replace(secData.find("nameReplace"), 11, '"' + resultName + '"');
+            secData.replace(secData.find("backReplace"), 11, codeColor);
+            secData.replace(secData.find("backTReplace"), 12, codeColor);
+            windowcode = replaceValue(windowcode, "buttonWidth", to_string(ButtonWidth));
+            windowcode = replaceValue(windowcode, "buttonHeigth", to_string(ButtonHeigth));
+            windowcode = replaceValue(windowcode, "buttonX", to_string(ButtonX));
+            windowcode = replaceValue(windowcode, "buttonY", to_string(ButtonY));
+        }
         codeFinal << definitions << head << secData << secBss << secText << messageListener << wm_command << wm_command_definitions << windowcode << ctlcolorStatic << footer;
         codeFinal.close();
-        //return definitions + head + secData + secBss + secText + messageListener + wm_command + wm_command_definitions + windowcode + ctlcolorStatic + footer;
-        }
     }
 }
 
@@ -348,8 +340,8 @@ int main(int argc, char *argv[]){
     int validator = 0;
     if(argv[1] != NULL){
         ifstream file;
-        const char* nameArchive = argv[1];
-        file.open(nameArchive);
+        const char* nameArchiveC = argv[1];
+        file.open(nameArchiveC);
         ofstream codeFinal("codeFinal.asm");
         int lineCout = 1;
         if(file.is_open()){
@@ -377,6 +369,18 @@ int main(int argc, char *argv[]){
                 lineCout++;
             }
             generateCodeFinal(elements);
+            string nameArchive(nameArchiveC);
+            string comNasm = "nasm -f win64 codeFinal.asm -o " + nameArchive.erase(nameArchive.size() - 3) + ".obj";
+            string comGolink = "golink /entry:Start kernel32.dll user32.dll gdi32.dll " + nameArchive+ ".obj";
+            int codeNasm = system(comNasm.c_str());
+            int codeGolink = system(comGolink.c_str());
+            if(codeNasm == 0 && codeGolink == 0){
+                cout << "Programa " << nameArchive.erase(nameArchive.size() - 3) << ".exe Criado com sucesso!" << endl;
+                return 0;
+            } else{
+                cout << "Falha ao compilar :(, veja o que foi imprimido acima!" << endl;
+                return 1;
+            }
             cout << "Compilation terminated. : )" << endl;
         } else{
             cerr << "Failed to read the archive. : (" << endl;

@@ -4,6 +4,8 @@
 #include <ostream>
 #include <string>
 #include <vector>
+#include <tuple>
+#include <cstring>
 using namespace std;
 
 struct AstElement{
@@ -18,11 +20,11 @@ struct AstElement{
     AstElement* nextElement;
     AstElement() : nextElement(nullptr) {}
 };
-
+bool isBehind = false;
 
 AstElement* parser(string expression, int startLine, int finalLine, int childrenLine){
     AstElement* element = new AstElement();
-    if(expression.find("drawWindow") != string::npos){
+    if(expression.find("drawWindow") != string::npos && isBehind == false){
         int indexName1 = expression.find("\"");
         int indexName2 = expression.find("\"", indexName1 + 1);
         string resultName = expression.substr(indexName1 + 1, indexName2 - indexName1 - 1);
@@ -42,7 +44,7 @@ AstElement* parser(string expression, int startLine, int finalLine, int children
             element->atributes[0][2] = to_string(childrenLine).c_str();
             element->atributes[0][3] = expression.substr(expression.find("background-color")).c_str();
         }
-    }else if(expression.find("drawText") != string::npos){
+    }else if(expression.find("drawText") != string::npos && isBehind == false){
         int indexName1 = expression.find("\"");
         int indexName2 = expression.find("\"", indexName1 + 1);
         string resultText = expression.substr(indexName1 + 1, indexName2 - indexName1 - 1);
@@ -58,7 +60,7 @@ AstElement* parser(string expression, int startLine, int finalLine, int children
             element->atributes[0][2] = to_string(childrenLine).c_str();
             element->atributes[0][3] = expression.substr(expression.find("color")).c_str();
         }
-    }else if(expression.find("drawButton") != string::npos){
+    }else if(expression.find("drawButton") != string::npos && isBehind == false){
         int indexName1 = expression.find("\"");
         int indexName2 = expression.find("\"", indexName1 + 1);
         string resultButton = expression.substr(indexName1 + 1, indexName2 - indexName1 - 1);
@@ -70,28 +72,47 @@ AstElement* parser(string expression, int startLine, int finalLine, int children
         element->params = {resultButton};
         if(expression.find("width") != string::npos && expression.find("width") > expression.find("{")){
             element->atributes[0][0] = "widthValue";
-            element->atributes[0][1] = expression.substr(expression.find("width") + 7, expression.find("\n")).c_str();
+            size_t valor = expression.find("width:") + 7;
+            size_t virgula = expression.find(",", valor);
+            element->atributes[0][1] = expression.substr(valor, virgula - valor);
             element->atributes[0][2] = to_string(childrenLine).c_str();
             element->atributes[0][3] = expression.substr(expression.find("width")).c_str();
         }
         if(expression.find("height") != string::npos && expression.find("height") > expression.find("{")){
             element->atributes[1][0] = "heightValue";
-            element->atributes[1][1] = expression.substr(expression.find("height") + 8, expression.find("\n")).c_str();
+            size_t valor = expression.find("height:") + 8;
+            size_t virgula = expression.find(",", valor);
+            element->atributes[1][1] = expression.substr(valor, virgula - valor);
             element->atributes[1][2] = to_string(childrenLine).c_str();
             element->atributes[1][3] = expression.substr(expression.find("height")).c_str();
         }
         if(expression.find("x") != string::npos && expression.find("x") > expression.find("{")){
             element->atributes[2][0] = "xAxis";
-            element->atributes[2][1] = expression.substr(expression.find("x") + 3, expression.find("\n")).c_str();
+            size_t valor = expression.find("x:") + 3;
+            size_t virgula = expression.find(",", valor);
+            element->atributes[2][1] = expression.substr(valor, virgula - valor);
             element->atributes[2][2] = to_string(childrenLine).c_str();
             element->atributes[2][3] = expression.substr(expression.find("x")).c_str();
         }
         if(expression.find("y") != string::npos && expression.find("y") > expression.find("{")){
             element->atributes[3][0] = "yAxis";
-            element->atributes[3][1] = expression.substr(expression.find("y") + 3, expression.find("\n")).c_str();
+            size_t valor = expression.find("y:") + 3;
+            size_t virgula = expression.find(",", valor);
+            element->atributes[3][1] = expression.substr(valor, virgula - valor);
             element->atributes[3][2] = to_string(childrenLine).c_str();
             element->atributes[3][3] = expression.substr(expression.find("y")).c_str();
         }
+    } else if(expression.find("ifClickEvent") != string::npos) {
+        size_t pos1 = expression.find("(");
+        size_t pos2 = expression.find(")");
+        string clickEventId = expression.substr(pos1 + 1, pos2 - pos1 - 1);
+        element->name = "ifClickEvent";
+        element->startLine = startLine;
+        element->finalLine = finalLine;
+        element->type = "clickEventChecker";
+        element->completeLine = expression;
+        element->params = {clickEventId}; 
+    
     } else{
         cerr << "\033[31m"<< "SeholSyntaxError: Unknown code or syntax detected in the scoope of code." <<  "\033[0m" << endl;
         cerr << "\033[4m   " + expression << "\033[0m" << endl;
@@ -201,9 +222,36 @@ string getPrefixes(string name){
             codePrefix += line + "\n";
         }
     }
+    prefixes.close();
     return codePrefix;
 }
-void generateCodeFinal(AstElement* elements[3]) {
+
+tuple<string, string, string, bool> devolveSolution(string name, string id){
+    tuple<string, string, string, bool> content;
+    if(name.find("drawMessageBox") != string::npos){
+        size_t pos1 = name.find("\"");
+        size_t pos2 = name.find(",");
+        string text = name.substr(pos1 + 1, pos2 - pos1 - 2);
+        size_t pose1 = name.find(",");
+        size_t pose2 = name.find(";");
+        string actions = name.substr(pose1 + 1, pose2 - pose1 - 2);
+        string messageBox = getPrefixes("drawMessageBox.pref");
+        if(actions == " YES_NO"){
+            messageBox = replaceValue(messageBox, "actionReplace", "MB_YESNO");
+        }
+        if(actions == " OK"){
+            messageBox = replaceValue(messageBox, "actionReplace", "MB_OK");
+        }
+        if(actions == " OK_CANCEL"){
+            messageBox = replaceValue(messageBox, "actionReplace", "MB_OKCANCEL");
+        }
+        messageBox = replaceValue(messageBox, "ExitTextReplace", id + "ExitText");
+        content = make_tuple(messageBox, id + "ExitText          db textReplace", text, true);
+    }
+    return content;
+}
+
+void generateCodeFinal(AstElement* elements[4]) {
     string definitions = getPrefixes("definitions.pref");
     string secData = getPrefixes("section-data.pref");
     string head = getPrefixes("head.pref");
@@ -222,7 +270,8 @@ void generateCodeFinal(AstElement* elements[3]) {
     int ButtonHeigth = 100;
     string type = "window";
     int ButtonY = 10;
-    bool isBehind = false;
+    string clickId;
+    bool isBehindCode = false;
     bool haveText = false;
     ofstream codeFinal("codeFinal.asm");
     string wm_command_definitions;
@@ -234,9 +283,9 @@ void generateCodeFinal(AstElement* elements[3]) {
     string TextId;
     int generator = 104;
     string resultName;
-    for(int i = 0; i < 3; i++) {
-        if(elements[i]->type == "drawWindowElement" && isBehind == false){
-            //type = "window";
+    for(int i = 0; i < 4; i++) {
+        if(elements[i]->type == "drawWindowElement" && isBehindCode == false){
+            type = "window";
             string params = elements[i]->params[0];
             size_t paramName = params.find(",");
             string resultName = params.substr(params.find(","));
@@ -246,12 +295,11 @@ void generateCodeFinal(AstElement* elements[3]) {
             string resultCommaWidth = completeline.substr(indexCommaWidth1 + 1, indexCommaWidth2 - indexCommaWidth1 - 1);
             string resultCommaHeigth = completeline.substr(indexCommaWidth2 + 2);
             windowcode += getPrefixes("drawWindow.pref");
-            /*if(completeline.find("{")){
-                int braceFinded = 1;
-                string element = "drawWindow";
-            }*/
-        }
-        if(elements[i]->type == "drawTextElement" && isBehind == false){
+            if(!elements[i]->atributes[0][0].empty()){
+                braceFinded = 1;
+                Element = "drawWindow";
+            }
+        }else if(elements[i]->type == "drawTextElement" && isBehindCode == false){
             type = "window";
             string completeline = elements[i]->completeLine;
             string erasedLine = completeline.erase(completeline.size() - 4);
@@ -283,13 +331,8 @@ void generateCodeFinal(AstElement* elements[3]) {
             ctlcolorStatic = replaceValue(ctlcolorStatic, "textColReplace", TextId + "Colour");
             ctlcolorStatic = replaceValue(ctlcolorStatic, "textBackReplace", TextId + "BackColour");
             ctlcolorStatic = replaceValue(ctlcolorStatic, "textId", TextId + "Id");
-            /*if(completeline.find("{")){
-                braceFinded = 1;
-                element = "drawText";
-            }*/
-        }
-        if(elements[i]->type == "drawButtonElement" && isBehind == false){
-            //type = "window";
+        }else if(elements[i]->type == "drawButtonElement" && isBehindCode == false){
+            type = "window";
             string completeline = elements[i]->completeLine;
             string erasedLine = completeline.erase(completeline.size() - 4);
             int indexText1 = completeline.find("\"");
@@ -300,18 +343,83 @@ void generateCodeFinal(AstElement* elements[3]) {
             string ButtonId = completeline.substr(pos1 + 1, pos2 - pos1 - 1);
             windowcode += getPrefixes("drawButton.pref");
             definitions += "\n" + ButtonId + "Id         EQU " + to_string(generator);
-            secBss += "\n" + ButtonId + "           resq 1 \n";
+            secBss += "\n " + ButtonId + "           resq 1 \n";
             generator++;
             secData += " " + ButtonId + "Text         db " + resultButton + ", 0 \n";
             secData += " buttonClass             db \"BUTTON\", 0 \n";
             windowcode = replaceValue(windowcode, "buttonText", ButtonId + "Text");
             windowcode = replaceValue(windowcode, "buttonId", ButtonId + "Id");
-            /*if(completeline.find("{")){
+            if(!elements[i]->atributes[0][0].empty()){
                 braceFinded = 1;
-                element = "drawButton";
-            }*/
+                Element = "drawButton";
+            }
+        }else if(elements[i]->name == "ifClickEvent" && isBehindCode == false) {
+            isBehindCode = true;
+            clickId = elements[i]->params[0];
+            string test = getPrefixes("ifclickevent.pref");
+            wm_command += "\n" + test;
+            wm_command = replaceValue(wm_command, "elementId", clickId + "Id");
+            wm_command = replaceValue(wm_command, "elementClass", clickId);
+            wm_command_definitions += "." + clickId + ": \n";
+            braceFinded = 1;
+            Element = "ifClickEvent";
         }
-        //return definitions + head + secData + secBss + secText + messageListener + wm_command + wm_command_definitions + windowcode + ctlcolorStatic + footer;
+        if(braceFinded == 1){
+            if(Element == "drawWindow"){
+                if(elements[i]->atributes[0][0] == "backgroundChange"){
+                    string color = elements[i]->atributes[0][1];
+                    if(color == "black"){
+                        codeColor = "0x000000";
+                    }
+                    if(color == "blue"){
+                        codeColor = "0x0052CC";
+                    }
+                    if(color == "lightblue"){
+                        codeColor = "0x80B3FF";
+                    }
+                    if(color == "lightgray"){
+                        codeColor = "0xFFE6E6";
+                    }
+                    if(color == "white"){
+                        codeColor = "0xFFFFFF";
+                    }
+                    if(color == "gray"){
+                        codeColor = "0x808080";
+                    }
+                    if(color[0] == '#'){
+                        codeColor = "0x" + color.substr(1);
+                    }
+                }
+            }else if(Element == "drawButton") {
+                if(elements[i]->atributes[0][0] == "widthValue"){
+                    string value = elements[i]->atributes[0][1];
+                    ButtonWidth =  stoi(value);
+                }
+                if(elements[i]->atributes[1][0] == "heigthValue"){
+                    string value = elements[i]->atributes[1][1];
+                    ButtonHeigth =  stoi(value);
+                }
+                if(elements[i]->atributes[2][0] == "yAxis"){
+                    string value = elements[i]->atributes[2][1];
+                    ButtonY =  stoi(value);
+                }
+                if(elements[i]->atributes[3][0] == "xAxis"){
+                    string value = elements[i]->atributes[3][1];
+                    ButtonX =  stoi(value);
+                }
+                } else if(Element == "ifClickEvent"){
+                    tuple<string, string, string, bool> received = devolveSolution(elements[i]->completeLine, clickId);
+                    string content = get<0>(received);
+                    wm_command_definitions += "\n" + content;
+                    if(get<3>(received) == true){
+                        secData += "\n " + get<1>(received);
+                        string text = get<2>(received);
+                        secData = replaceValue(secData, "textReplace", "\"" + text + "\"" + ", 0 \n");
+                    }
+                } else {
+                cerr << "Unknowm Attribute " << Element << endl;
+            }
+        }
     }
     if(codeFinal.is_open()){
         if(type == "window"){
@@ -330,13 +438,14 @@ void generateCodeFinal(AstElement* elements[3]) {
     }
 }
 
+
 int main(int argc, char *argv[]){
     string line;
     string archive;
     AstElement* expression;
     int startline = 0;
     int count = 0;
-    AstElement* elements[3];
+    AstElement* elements[4];
     int validator = 0;
     if(argv[1] != NULL){
         ifstream file;
@@ -363,6 +472,10 @@ int main(int argc, char *argv[]){
                             elements[count] = expression;
                             count++;
                         }
+                        
+                    }else {
+                        elements[count] = expression;
+                        count++;
                     }
                     validator = 0;
                 }
@@ -370,12 +483,19 @@ int main(int argc, char *argv[]){
             }
             generateCodeFinal(elements);
             string nameArchive(nameArchiveC);
-            string comNasm = "nasm -f win64 codeFinal.asm -o " + nameArchive.erase(nameArchive.size() - 3) + ".obj";
-            string comGolink = "golink /entry:Start kernel32.dll user32.dll gdi32.dll " + nameArchive+ ".obj";
+            string comNasm = "nasm -f win64 codeFinal.asm -o " + nameArchive.erase(nameArchive.size() - 3) + ".obj > ./bin-helpers/logs/output-nasm.log";
+            string comGolink = "golink /entry:Start kernel32.dll user32.dll gdi32.dll " + nameArchive+ ".obj > ./bin-helpers/logs/output-golink.log";
             int codeNasm = system(comNasm.c_str());
             int codeGolink = system(comGolink.c_str());
             if(codeNasm == 0 && codeGolink == 0){
-                cout << "Programa " << nameArchive.erase(nameArchive.size() - 3) << ".exe Criado com sucesso!" << endl;
+                cout << "Programa " << nameArchive.erase(nameArchive.size()) << ".exe Criado com sucesso!" << endl;
+                for (int i = 1; i < argc; ++i) {
+                    if (strcmp(argv[i], "-r") == 0) {
+                        cout << "Rodando ..." << endl;
+                        string running = ".\\" + nameArchive.erase(nameArchive.size()) + ".exe";
+                        system(running.c_str());
+                    }
+                }
                 return 0;
             } else{
                 cout << "Falha ao compilar :(, veja o que foi imprimido acima!" << endl;

@@ -51,8 +51,8 @@ WindowHeight         EQU 500
 Static2ID         EQU 101
 Edit1ID           EQU 102
 Edit2ID           EQU 103
-welcomeId            EQU 104
-clickHereId         EQU 105
+welcomeTextId            EQU 104
+showButtonId         EQU 105
 extern AdjustWindowRectEx                       ; Import external symbols
 extern BeginPaint                               ; Windows API functions, not decorated
 extern BitBlt
@@ -102,11 +102,13 @@ section .data                                   ; Initialized data segment
  EditClass        db "EDIT", 0
  ExitText         db "Você quer sair?", 0
  
- welcomeText      db "Welcome here!", 0 
- welcomeColour       dd 0x000000, 0 
- welcomeBackColour       dd 0xFFFFFF, 0 
- clickHereText         db "Click Here!", 0 
+ welcomeTextText      db "Clique no botao:", 0 
+ welcomeTextColour       dd 0x000000, 0 
+ welcomeTextBackColour       dd 0xFFFFFF, 0 
+ showButtonText         db "Clique em mim", 0 
  buttonClass             db "BUTTON", 0 
+
+ showButtonExitText          db "Ola estou bem tambem esta?", 0 
 section .bss                                    ; Uninitialized data segment
  alignb 8
  hInstance        resq 1
@@ -117,9 +119,9 @@ section .bss                                    ; Uninitialized data segment
  Edit2            resq 1
  
 
- welcome            resq 1 
+ welcomeText            resq 1 
 
-clickHere           resq 1 
+ showButton           resq 1 
 section .text
  
                                    ; Code segment
@@ -404,22 +406,37 @@ WMCLOSE:
 WMCOMMAND:
  mov   RAX, qword [wParam]                      ; RAX = ID. [RBP + 32]
 
- cmp   AX, welcomeId
- je    .welcome
+ cmp   AX, welcomeTextId
+ je    .welcomeText
 
 
 
-.welcome:
- mov   EAX, dword [REL welcomeColour]
- mov   ECX, dword [REL welcomeBackColour]
- mov   dword [REL welcomeColour], ECX
- mov   dword [REL welcomeBackColour], EAX          ; Swap colours
+
+ cmp AX, showButtonId
+ je  .showButton
+.welcomeText:
+ mov   EAX, dword [REL welcomeTextColour]
+ mov   ECX, dword [REL welcomeTextBackColour]
+ mov   dword [REL welcomeTextColour], ECX
+ mov   dword [REL welcomeTextBackColour], EAX          ; Swap colours
 
  mov   RCX, qword [lParam]                      ; Static1 handle. [RBP + 40]
  xor   EDX, EDX
  mov   R8D, TRUE
  call  InvalidateRect                           ; Redraw control
  jmp   Return.WM_Processed
+.showButton: 
+
+ mov   RCX, qword [hWnd]                        ; [RBP + 16]
+ lea   RDX, [REL showButtonExitText]
+ lea   R8, [REL WindowName]
+ mov   R9D, MB_YESNO | MB_DEFBUTTON2
+ call  MessageBoxA
+
+ cmp   RAX, IDNO
+ je    Return.WM_Processed
+
+ mov   RCX, qword [hWnd]                        ; [RBP + 16]           
  jmp   Return.WM_Processed
  
 WMCREATE:
@@ -427,7 +444,7 @@ WMCREATE:
  
  xor   ECX, ECX
  lea   RDX, [REL StaticClass]
- lea   R8, [REL welcomeText]                          ; Default text
+ lea   R8, [REL welcomeTextText]                          ; Default text
  mov   R9D, WS_CHILD | WS_VISIBLE | SS_NOTIFY | SS_CENTER
  mov   qword [RSP + 4 * 8], 120                 ; X
  mov   qword [RSP + 5 * 8], 10                  ; Y
@@ -435,12 +452,12 @@ WMCREATE:
  mov   qword [RSP + 7 * 8], 20                  ; Height
  mov   RAX, qword [hWnd]                        ; [RBP + 16]
  mov   qword [RSP + 8 * 8], RAX 
- mov   qword [RSP + 9 * 8], welcomeId 
+ mov   qword [RSP + 9 * 8], welcomeTextId 
  mov   RAX, qword [REL hInstance] 
  mov   qword [RSP + 10 * 8], RAX
  mov   qword [RSP + 11 * 8], NULL
  call  CreateWindowExA
- mov   qword [REL welcome], RAX
+ mov   qword [REL welcomeText], RAX
 
  mov   ECX, 20                                  ; Size
  xor   EDX, EDX
@@ -460,22 +477,22 @@ WMCREATE:
  call  CreateFontA
  mov   qword [REL Font], RAX
 
- mov   RCX, qword [REL welcome]
+ mov   RCX, qword [REL welcomeText]
  mov   EDX, WM_SETFONT
  mov   R8, qword [REL Font]
  xor   R9D, R9D
  call  SendMessageA
  xor     rcx, rcx
  lea     rdx, [REL buttonClass]    ; lpClassName
- lea     r8, [REL clickHereText]          ; lpWindowName
+ lea     r8, [REL showButtonText]          ; lpWindowName
  mov     r9d, WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON    ; Styles
  mov     qword [rsp + 4*8], 10          ; X
  mov     qword [rsp + 5*8], 10          ; Y
- mov     qword [rsp + 6*8], 300         ; Width
+ mov     qword [rsp + 6*8], 100         ; Width
  mov     qword [rsp + 7*8], 100          ; Height
  mov     rax, qword [hWnd]              ; hWnd (identificador da janela)
  mov     qword [rsp + 8*8], rax
- mov     qword [rsp + 9*8], clickHereId   ; Suponha que você tenha definido clickHereId
+ mov     qword [rsp + 9*8], showButtonId   ; Suponha que você tenha definido showButtonId
  mov     rax, qword [REL hInstance]
  mov     qword [rsp + 10*8], rax
  mov     qword [rsp + 11*8], NULL
@@ -542,8 +559,8 @@ WMCTLCOLORSTATIC:                               ; For colouring static controls
  mov   RCX, qword [lParam]                      ; [RBP + 40]
  call  GetDlgCtrlID                             ; RAX = ID
 
- cmp   RAX, welcomeId
- je    .welcome
+ cmp   RAX, welcomeTextId
+ je    .welcomeText
 
 .Default:
  mov   ECX, NULL_BRUSH
@@ -551,9 +568,9 @@ WMCTLCOLORSTATIC:                               ; For colouring static controls
  jmp   Return
 
 
-.welcome:
+.welcomeText:
  mov   RCX, qword [wParam]                      ; [RBP + 32]
- mov   EDX, dword [REL welcomeColour]
+ mov   EDX, dword [REL welcomeTextColour]
  call  SetTextColor
 
  mov   RCX, qword [wParam]                      ; [RBP + 32]
@@ -561,7 +578,7 @@ WMCTLCOLORSTATIC:                               ; For colouring static controls
  call  SetBkMode
 
  mov   RCX, qword [wParam]                      ; [RBP + 32]
- mov   EDX, [REL welcomeBackColour]
+ mov   EDX, [REL welcomeTextBackColour]
  call  SetBkColor
 
  mov   ECX, NULL_BRUSH

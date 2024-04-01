@@ -8,7 +8,7 @@ Linguagem de programação brasileira para Windows/Linux compilada de nome Sea H
 
 * Aproveitar da perfomace das linguagens compiladas com o poder do Assembly.
 
-# DO QUE PRECIZAMOS:
+# DO QUE QUERO:
 Quero entender os principais problemas em relação a aspectos como curva de aprendizado, facilidade no uso, limitações a serem resolvidas, problemas e bugs de outras liguagens e formular soluções para o Sehol
 
 -Comming soon, Renan Augusto

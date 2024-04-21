@@ -12,4 +12,5 @@ section .data                                   ; Initialized data segment
  StaticClass      db "STATIC", 0
  EditClass        db "EDIT", 0
  ExitText         db "Você quer sair?", 0
+ buttonClass      db "BUTTON", 0
  

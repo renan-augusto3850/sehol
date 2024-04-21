@@ -40,6 +40,8 @@ WS_CHILD             EQU 40000000h
 WS_EX_COMPOSITED     EQU 2000000h
 WS_OVERLAPPEDWINDOW  EQU 0CF0000h
 BS_DEFPUSHBUTTON     EQU 0x00000001
+BS_AUTOCHECKBOX      EQU 3
+BS_AUTORADIO         EQU 8
 WS_TABSTOP           EQU 10000h
 WS_VISIBLE           EQU 10000000h
 WM_CTLCOLORBTN       EQU 0x0135
@@ -52,7 +54,7 @@ Static2ID         EQU 101
 Edit1ID           EQU 102
 Edit2ID           EQU 103
 welcomeTextId            EQU 104
-showButtonId         EQU 105
+checkMeId         EQU 105
 extern AdjustWindowRectEx                       ; Import external symbols
 extern BeginPaint                               ; Windows API functions, not decorated
 extern BitBlt
@@ -101,14 +103,12 @@ section .data                                   ; Initialized data segment
  StaticClass      db "STATIC", 0
  EditClass        db "EDIT", 0
  ExitText         db "Você quer sair?", 0
+ buttonClass      db "BUTTON", 0
  
  welcomeTextText      db "Clique no botao:", 0 
  welcomeTextColour       dd 0x000000, 0 
  welcomeTextBackColour       dd 0xFFFFFF, 0 
- showButtonText         db "Clique em mim", 0 
- buttonClass             db "BUTTON", 0 
-
- showButtonExitText          db "Ola estou bem tambem esta?", 0 
+ checkMeText         db "Cheque mim!", 0 
 section .bss                                    ; Uninitialized data segment
  alignb 8
  hInstance        resq 1
@@ -121,7 +121,7 @@ section .bss                                    ; Uninitialized data segment
 
  welcomeText            resq 1 
 
- showButton           resq 1 
+ checkMe           resq 1 
 section .text
  
                                    ; Code segment
@@ -411,9 +411,6 @@ WMCOMMAND:
 
 
 
-
- cmp AX, showButtonId
- je  .showButton
 .welcomeText:
  mov   EAX, dword [REL welcomeTextColour]
  mov   ECX, dword [REL welcomeTextBackColour]
@@ -425,18 +422,6 @@ WMCOMMAND:
  mov   R8D, TRUE
  call  InvalidateRect                           ; Redraw control
  jmp   Return.WM_Processed
-.showButton: 
-
- mov   RCX, qword [hWnd]                        ; [RBP + 16]
- lea   RDX, [REL showButtonExitText]
- lea   R8, [REL WindowName]
- mov   R9D, MB_YESNO | MB_DEFBUTTON2
- call  MessageBoxA
-
- cmp   RAX, IDNO
- je    Return.WM_Processed
-
- mov   RCX, qword [hWnd]                        ; [RBP + 16]           
  jmp   Return.WM_Processed
  
 WMCREATE:
@@ -482,28 +467,21 @@ WMCREATE:
  mov   R8, qword [REL Font]
  xor   R9D, R9D
  call  SendMessageA
- xor     rcx, rcx
- lea     rdx, [REL buttonClass]    ; lpClassName
- lea     r8, [REL showButtonText]          ; lpWindowName
- mov     r9d, WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON    ; Styles
- mov     qword [rsp + 4*8], 10          ; X
- mov     qword [rsp + 5*8], 10          ; Y
- mov     qword [rsp + 6*8], 100         ; Width
- mov     qword [rsp + 7*8], 100          ; Height
- mov     rax, qword [hWnd]              ; hWnd (identificador da janela)
- mov     qword [rsp + 8*8], rax
- mov     qword [rsp + 9*8], showButtonId   ; Suponha que você tenha definido showButtonId
- mov     rax, qword [REL hInstance]
- mov     qword [rsp + 10*8], rax
- mov     qword [rsp + 11*8], NULL
- call    CreateWindowExA
-
- mov   RCX, qword [REL buttonClass]
- mov   EDX, WM_SETFONT
- mov   R8, qword [REL Font]
- xor   R9D, R9D
- call  SendMessageA
-
+ xor     rcx, rcx                 ; Clear rcx (class name)
+ lea     rdx, [buttonClass]      ; Load address of class name
+ lea     r8, [checkMeText]      ; Load address of checkbox text
+ mov     r9d, WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX ; Styles
+ mov     qword [rsp + 4*8], 10  ; X position
+ mov     qword [rsp + 5*8], 10  ; Y position
+ mov     qword [rsp + 6*8], 100   ; Width
+ mov     qword [rsp + 7*8], 100   ; Height
+ mov     rax, qword [hWnd]       ; Load window handle (assuming you have it stored in hWnd)
+ mov     qword [rsp + 8*8], rax  ; Set parent window handle
+ mov     qword [rsp + 9*8], checkMeId ; Assume you defined showButtonId
+ mov     rax, qword [REL hInstance] ; Load instance handle
+ mov     qword [rsp + 10*8], rax ; Set instance handle
+ mov     qword [rsp + 11*8], NULL ; Set menu handle (NULL for no menu)
+ call    CreateWindowExA    
  jmp   Return.WM_Processed
  
 WMCTLCOLOREDIT:                                 ; For colouring edit controls

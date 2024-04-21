@@ -1,0 +1,15 @@
+ xor     rcx, rcx                 ; Clear rcx (class name)
+ lea     rdx, [buttonClass]      ; Load address of class name
+ lea     r8, [checkboxText]      ; Load address of checkbox text
+ mov     r9d, WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX ; Styles
+ mov     qword [rsp + 4*8], checkboxX  ; X position
+ mov     qword [rsp + 5*8], checkboxY  ; Y position
+ mov     qword [rsp + 6*8], checkboxWidth   ; Width
+ mov     qword [rsp + 7*8], checkboxHeight   ; Height
+ mov     rax, qword [hWnd]       ; Load window handle (assuming you have it stored in hWnd)
+ mov     qword [rsp + 8*8], rax  ; Set parent window handle
+ mov     qword [rsp + 9*8], checkboxId ; Assume you defined showButtonId
+ mov     rax, qword [REL hInstance] ; Load instance handle
+ mov     qword [rsp + 10*8], rax ; Set instance handle
+ mov     qword [rsp + 11*8], NULL ; Set menu handle (NULL for no menu)
+ call    CreateWindowExA    

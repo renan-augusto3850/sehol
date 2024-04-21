@@ -102,6 +102,48 @@ AstElement* parser(string expression, int startLine, int finalLine, int children
             element->atributes[3][2] = to_string(childrenLine).c_str();
             element->atributes[3][3] = expression.substr(expression.find("y")).c_str();
         }
+    }else if(expression.find("drawCheckBox") != string::npos) {
+        int indexName1 = expression.find("\"");
+        int indexName2 = expression.find("\"", indexName1 + 1);
+        string resultCheckbox = expression.substr(indexName1 + 1, indexName2 - indexName1 - 1);
+        element->name = "drawCheckBox";
+        element->startLine = startLine;
+        element->finalLine = finalLine;
+        element->type = "drawCheckBoxElement";
+        element->completeLine = expression;
+        element->params = {resultCheckbox};
+        if(expression.find("width") != string::npos && expression.find("width") > expression.find("{")){
+            element->atributes[0][0] = "widthValue";
+            size_t valor = expression.find("width:") + 7;
+            size_t virgula = expression.find(",", valor);
+            element->atributes[0][1] = expression.substr(valor, virgula - valor);
+            element->atributes[0][2] = to_string(childrenLine).c_str();
+            element->atributes[0][3] = expression.substr(expression.find("width")).c_str();
+        }
+        if(expression.find("height") != string::npos && expression.find("height") > expression.find("{")){
+            element->atributes[1][0] = "heightValue";
+            size_t valor = expression.find("height:") + 8;
+            size_t virgula = expression.find(",", valor);
+            element->atributes[1][1] = expression.substr(valor, virgula - valor);
+            element->atributes[1][2] = to_string(childrenLine).c_str();
+            element->atributes[1][3] = expression.substr(expression.find("height")).c_str();
+        }
+        if(expression.find("x") != string::npos && expression.find("x") > expression.find("{")){
+            element->atributes[2][0] = "xAxis";
+            size_t valor = expression.find("x:") + 3;
+            size_t virgula = expression.find(",", valor);
+            element->atributes[2][1] = expression.substr(valor, virgula - valor);
+            element->atributes[2][2] = to_string(childrenLine).c_str();
+            element->atributes[2][3] = expression.substr(expression.find("x")).c_str();
+        }
+        if(expression.find("y") != string::npos && expression.find("y") > expression.find("{")){
+            element->atributes[3][0] = "yAxis";
+            size_t valor = expression.find("y:") + 3;
+            size_t virgula = expression.find(",", valor);
+            element->atributes[3][1] = expression.substr(valor, virgula - valor);
+            element->atributes[3][2] = to_string(childrenLine).c_str();
+            element->atributes[3][3] = expression.substr(expression.find("y")).c_str();
+        }
     } else if(expression.find("ifClickEvent") != string::npos) {
         size_t pos1 = expression.find("(");
         size_t pos2 = expression.find(")");
@@ -267,9 +309,13 @@ void generateCodeFinal(AstElement* elements[4]) {
     string resultCommaHeigth = "500";
     int ButtonWidth = 300;
     int ButtonX = 10;
-    int ButtonHeigth = 100;
-    string type = "window";
     int ButtonY = 10;
+    int ButtonHeigth = 100;
+    int checkboxWidth = 300;
+    int checkboxX = 10;
+    int checkboxY = 10;
+    int checkboxHeigth = 100;
+    string type = "window";
     string clickId;
     bool isBehindCode = false;
     bool haveText = false;
@@ -299,7 +345,7 @@ void generateCodeFinal(AstElement* elements[4]) {
                 braceFinded = 1;
                 Element = "drawWindow";
             }
-        }else if(elements[i]->type == "drawTextElement" && isBehindCode == false){
+        } if(elements[i]->type == "drawTextElement" && isBehindCode == false){
             type = "window";
             string completeline = elements[i]->completeLine;
             string erasedLine = completeline.erase(completeline.size() - 4);
@@ -331,7 +377,7 @@ void generateCodeFinal(AstElement* elements[4]) {
             ctlcolorStatic = replaceValue(ctlcolorStatic, "textColReplace", TextId + "Colour");
             ctlcolorStatic = replaceValue(ctlcolorStatic, "textBackReplace", TextId + "BackColour");
             ctlcolorStatic = replaceValue(ctlcolorStatic, "textId", TextId + "Id");
-        }else if(elements[i]->type == "drawButtonElement" && isBehindCode == false){
+        } if(elements[i]->type == "drawButtonElement" && isBehindCode == false){
             type = "window";
             string completeline = elements[i]->completeLine;
             string erasedLine = completeline.erase(completeline.size() - 4);
@@ -346,14 +392,34 @@ void generateCodeFinal(AstElement* elements[4]) {
             secBss += "\n " + ButtonId + "           resq 1 \n";
             generator++;
             secData += " " + ButtonId + "Text         db " + resultButton + ", 0 \n";
-            secData += " buttonClass             db \"BUTTON\", 0 \n";
             windowcode = replaceValue(windowcode, "buttonText", ButtonId + "Text");
             windowcode = replaceValue(windowcode, "buttonId", ButtonId + "Id");
             if(!elements[i]->atributes[0][0].empty()){
                 braceFinded = 1;
                 Element = "drawButton";
             }
-        }else if(elements[i]->name == "ifClickEvent" && isBehindCode == false) {
+        } if(elements[i]->type == "drawCheckBoxElement"){
+            type = "window";
+            string completeline = elements[i]->completeLine;
+            string erasedLine = completeline.erase(completeline.size() - 4);
+            int indexText1 = completeline.find("\"");
+            int indexText2 = completeline.find(")") - 1;
+            string resultCheckbox = "\"" + completeline.substr(indexText1 + 1, indexText2 - indexText1 - 1) + "\"";
+            size_t pos1 = completeline.find(" ");
+            size_t pos2 = completeline.find("(");
+            string checkboxId = completeline.substr(pos1 + 1, pos2 - pos1 - 1);
+            windowcode += getPrefixes("drawCheckbox.pref");
+            definitions += "\n" + checkboxId + "Id         EQU " + to_string(generator);
+            secBss += "\n " + checkboxId + "           resq 1 \n";
+            generator++;
+            secData += " " + checkboxId + "Text         db " + resultCheckbox + ", 0 \n";
+            windowcode = replaceValue(windowcode, "checkboxText", checkboxId + "Text");
+            windowcode = replaceValue(windowcode, "checkboxId", checkboxId + "Id");
+            if(!elements[i]->atributes[0][0].empty()){
+                braceFinded = 1;
+                Element = "drawButton";
+            }
+        } if(elements[i]->name == "ifClickEvent") {
             isBehindCode = true;
             clickId = elements[i]->params[0];
             string test = getPrefixes("ifclickevent.pref");
@@ -393,19 +459,19 @@ void generateCodeFinal(AstElement* elements[4]) {
             }else if(Element == "drawButton") {
                 if(elements[i]->atributes[0][0] == "widthValue"){
                     string value = elements[i]->atributes[0][1];
-                    ButtonWidth =  stoi(value);
+                    checkboxWidth =  stoi(value);
                 }
                 if(elements[i]->atributes[1][0] == "heigthValue"){
                     string value = elements[i]->atributes[1][1];
-                    ButtonHeigth =  stoi(value);
+                    checkboxHeigth =  stoi(value);
                 }
                 if(elements[i]->atributes[2][0] == "yAxis"){
                     string value = elements[i]->atributes[2][1];
-                    ButtonY =  stoi(value);
+                    checkboxY =  stoi(value);
                 }
                 if(elements[i]->atributes[3][0] == "xAxis"){
                     string value = elements[i]->atributes[3][1];
-                    ButtonX =  stoi(value);
+                    checkboxX =  stoi(value);
                 }
                 } else if(Element == "ifClickEvent"){
                     tuple<string, string, string, bool> received = devolveSolution(elements[i]->completeLine, clickId);
@@ -432,6 +498,10 @@ void generateCodeFinal(AstElement* elements[4]) {
             windowcode = replaceValue(windowcode, "buttonHeigth", to_string(ButtonHeigth));
             windowcode = replaceValue(windowcode, "buttonX", to_string(ButtonX));
             windowcode = replaceValue(windowcode, "buttonY", to_string(ButtonY));
+            windowcode = replaceValue(windowcode, "checkboxWidth", to_string(checkboxWidth));
+            windowcode = replaceValue(windowcode, "checkboxHeight", to_string(checkboxHeigth));
+            windowcode = replaceValue(windowcode, "checkboxX", to_string(checkboxX));
+            windowcode = replaceValue(windowcode, "checkboxY", to_string(checkboxY));
         }
         codeFinal << definitions << head << secData << secBss << secText << messageListener << wm_command << wm_command_definitions << windowcode << ctlcolorStatic << footer;
         codeFinal.close();

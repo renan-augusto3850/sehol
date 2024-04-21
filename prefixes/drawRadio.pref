@@ -1,0 +1,15 @@
+ xor     rcx, rcx
+ lea     rdx, [REL buttonClass]   ; lpClassName
+ lea     r8, [REL textReplace]   ; lpWindowName
+ mov     r9d, WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON ; Styles
+ mov     qword [rsp + 4*8], 10  ; X
+ mov     qword [rsp + 5*8], 60  ; Y (adjust as needed)
+ mov     qword [rsp + 6*8], 100 ; Width
+ mov     qword [rsp + 7*8], 20  ; Height
+ mov     rax, qword [hWnd]      ; hWnd (window handle)
+ mov     qword [rsp + 8*8], rax
+ mov     qword [rsp + 9*8], radioOption1Id ; Assume you've defined radioOption1Id
+ mov     rax, qword [REL hInstance]
+ mov     qword [rsp + 10*8], rax
+ mov     qword [rsp + 11*8], NULL
+ call    CreateWindowExA

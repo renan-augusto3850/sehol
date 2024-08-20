@@ -1,0 +1,6 @@
+var i = input("Seu nome:");
+printLog(i);
+printLog(i);
+printLog(i);
+printLog(i);
+printLog(i);

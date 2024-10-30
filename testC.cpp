@@ -6,9 +6,42 @@
 #include <unordered_map>
 #include <vector>
 #include <sstream>
-#include <algorithm>
-#include "mathematics.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/SourceMgr.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/ManagedStatic.h"
+#include "llvm/IRReader/IRReader.h"
+#include "llvm/Support/MemoryBuffer.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/Process.h"
+#include "llvm/Support/ToolOutputFile.h"
+#include "llvm/Support/PrettyStackTrace.h"
+#include "llvm/Support/Program.h"
+#include "llvm/Support/FileSystem.h"
 
+#include <cstdlib>
+using namespace std;
+
+void compileLLVMIRToExecutable(const std::string &irFile, const std::string &output) {
+    cout << "Compiling";
+    // Compilar IR para código de máquina
+    std::string llcCommand = "llc " + irFile + " -o " + output + ".s";
+    std::system(llcCommand.c_str());
+
+    // Compilar código de máquina para executável
+    std::string gppCommand = "g++ " + output + ".s -o " + output;
+    std::system(gppCommand.c_str());
+}
 using namespace std;
 
 struct AstElement{
@@ -23,6 +56,11 @@ struct AstElement{
     AstElement() : element(nullptr) {}
 };
 
+struct variables{
+    string name;
+    string value;
+};
+
 unordered_map<string, variables> variableTable;
 
 
@@ -35,6 +73,7 @@ vector<string> tokenize(const string& expression) {
     int braceDepth = 0;
 
     for (size_t i = 0; i < expression.size(); ++i) {
+        cout << "Tokenizing";
         char ch = expression[i];
 
         // Ignorar quebras de linha
@@ -113,12 +152,13 @@ vector<string> tokenize(const string& expression) {
 }
 
 AstElement* parseTokens(const vector<string>& tokens, int childrenLine) {
+    cout << "Parsing";
     AstElement* element = new AstElement();
     variables var;
-    // for(int i = 0; i < tokens.size(); i++) {
-    //    cout << "[ " << tokens[i] << " ]";
-    // }
-    // cout << endl;   
+     for(int i = 0; i < tokens.size(); i++) {
+        cout << "[ " << tokens[i] << " ]";
+     }
+     cout << endl;   
     if (tokens.empty()) {
         cerr << "\033[31m" << "SeholError:" << "Invalid expression." << "\033[0m" << endl;
         return nullptr;
@@ -249,48 +289,44 @@ bool ignoreThis = false;
 bool firstRound = false;
 void startRuntime(vector<AstElement*> elementsVector, string scoope) {
     for(const auto& elements : elementsVector) {
+        cout << elements->type;
         if(elements->type == "printLogConsole") {
-            auto it = variableTable.find(elements->params);
-            if(it != variableTable.end()) {
-                cout << variableTable[elements->params].value << endl;
-            } else {
-                cout << elements->params << endl;
-            }
-        } if(elements->type == "inputIn") {
-            string userInput;
-            cout << elements->params << " ";
-            getline(std::cin, userInput);
+            cout << "Gere";
+            llvm::LLVMContext context;
+            llvm::Module module("MyModule", context);
+            llvm::IRBuilder<> builder(context);
 
-            if (elements->returnTo == "body") {
-                cout << userInput << std::endl;
-            } else {
-                variableTable[elements->returnTo].value = userInput;
-            }
-        } if(elements->type == "ifCondition") {
+            // Simulação da extração de string
+            std::string extractedString = elements->params; // Esta string deve vir da sua lógica de tokens
 
-            // Dividir a expressão em tokens
+            // Declaração da função printf
+            llvm::FunctionType* printfType = llvm::FunctionType::get(builder.getInt32Ty(), builder.getInt8PtrTy(), true);
+            llvm::Function::Create(printfType, llvm::Function::ExternalLinkage, "printf", module);
 
-            vector<string> tokens = dividirExpressao(elements->params, variableTable);
-            // Converter para Notação Polonesa Reversa (RPN)
-            vector<string> rpn = paraRPN(tokens);
+            // Criar a função main
+            llvm::FunctionType* mainType = llvm::FunctionType::get(builder.getInt32Ty(), false);
+            llvm::Function* mainFunc = llvm::Function::Create(mainType, llvm::Function::ExternalLinkage, "main", module);
+            llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "entry", mainFunc);
+            builder.SetInsertPoint(entry);
 
-            // Avaliar a expressão em RPN
-             cout << endl << "avaliar"; 
-                double resultado = avaliarRPN(rpn);
-                if(resultado == 0) {
-                    size_t pos1 = elements->scoopeBlock.find("{");
-                    size_t pos2 = elements->scoopeBlock.rfind("}");
-                    if (pos1 != string::npos && pos2 != string::npos && pos2 > pos1) {
-                        elements->scoopeBlock = elements->scoopeBlock.substr(pos1 + 1, pos2 - pos1 - 1);
-                    }
-                    AstElement* expression = parser(elements->scoopeBlock, 0);
-                    vector<AstElement*> elementsBlock;
-                    if(!expression->name.empty()) {
-                        elementsBlock.push_back(expression);
-                        startRuntime(elementsBlock, "blockOfIf");
-                    }
-                }
-            
+            // Criar a string a partir de extractedString
+            llvm::Value* helloStr = builder.CreateGlobalStringPtr(extractedString);
+
+            // Chamar printf
+            builder.CreateCall(printfType, llvm::Function::Create(printfType, llvm::Function::ExternalLinkage, "printf", module), helloStr);
+
+            // Retornar 0
+            builder.CreateRet(builder.getInt32(0));
+
+            // Salvar o módulo em um arquivo LLVM IR
+            std::string irFile = "my_module.ll";
+            std::error_code EC;
+            llvm::ToolOutputFile out(irFile, EC, llvm::sys::fs::OF_None);
+            module.print(out.os(), nullptr);
+            out.keep();
+
+            // Compilar o LLVM IR para um executável
+            compileLLVMIRToExecutable(irFile, "my_program");
         }
     }
 }
@@ -304,13 +340,15 @@ int main(int argc, char *argv[]) {
     bool blockOfCommand =  false;
     vector<AstElement*> elements;
     int validator = 0;
-    if(argv[1] != NULL){
+    cout << argv[0];
+    if(argc > 1){
         ifstream file;
         const char* nameArchiveC = argv[1];
+        cout << argv[1];
         file.open(nameArchiveC);
         int lineCout = 1;
         if(file.is_open()){
-            cout << "ok";
+            cout << argv[1];
             int childrenLine;
             while(getline(file, line)){
                 archive += line + "\n";

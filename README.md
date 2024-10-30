@@ -1,35 +1,40 @@
-# Sehol (Comming soon)
-Linguagem de programação brasileira para Windows/Linux compilada de nome Sea Horse Language.
+<div align="center">
+  <img alt="Sehol" src="./image/logo_color.png" />
+</div>
 
-# Objetivos:
-* Integrar a facilidade das linguagens web para o desenvolvimento no PC.
+<h3 align="center">Seahorse Language</h3>
+<p align="center">Linguagem de programação compilada com foco em simplicidade e praticidade.</p>
 
-* Integrar uma curva mais facil de aprendizado usando conceitos já conhecidos.
+## Introdução
 
-* Aproveitar da perfomace das linguagens compiladas com o poder do Assembly.
+- Sehol foi criado para:
+  - Integrar a facilidade das linguagens web para o desenvolvimento nativo.
+  - Integrar uma curva mais facil de aprendizado usando conceitos já conhecidos.
+  - Aproveitar da perfomance das linguagens compiladas em um código simples.
 
-# O que desejo:
-Quero entender os principais problemas em relação a aspectos como curva de aprendizado, facilidade no uso, limitações a serem resolvidas, problemas e bugs de outras liguagens e formular soluções para o Sehol.
+## Utilizando o Sehol
+O código neste repositório implementa um compilador simples para a linguagem Sehol em C++.
 
-# Exemplos:
+Infelizmente o compilador ainda não está terminado e muito menos em estabilidade. Portanto, não recomendo a você tentar executar qualquer código que esteja nesse repositório **por enquanto**.
 
-
-- Imprimir simples:
-
-  `
-  printlog("hello");
-  `
+## Exemplos
+- Hello World:
+  ```
+  printLog("Hello World!");
+  ```
 - Variaveis:
-
-  `
-    var i = "hello";
-    printLog(i);
-  `
+  ```
+  var i = "hello";
+  printLog(i);
+  ```
 - I/O:
+  ```
+  var i = input("Digite seu nome:");
+  printLog(i);
+  ```
 
-  `
-    var i = input("Digite seu nome:");
-    printLog(i);
-  `
-  
-    -More things comming soon.
+Mais exemplos estão por vir...
+
+---
+
+> [MIT License](./LICENSE)

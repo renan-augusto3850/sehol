@@ -1,0 +1,16 @@
+
+"string"
+10 304 05
+
+if 5 < 10 {
+}
+
+var x = 10;
+
+while x < 100 {
+    x = x + 1;
+}
+
+for i in a {
+
+}

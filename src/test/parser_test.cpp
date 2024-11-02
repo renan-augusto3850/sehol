@@ -5,7 +5,6 @@
 
 void print_ast(const ASTNode& node, const std::string& prefix = "") {
     std::cout << prefix << "Node Type: ";
-
     switch (node.type) {
         case NodeType::INTEGER_LITERAL:
             std::cout << "Integer Literal, Value: " << static_cast<const IntegerLiteral&>(node).value << std::endl;
@@ -19,7 +18,7 @@ void print_ast(const ASTNode& node, const std::string& prefix = "") {
         case NodeType::VAR_STATEMENT: {
             const auto& assignment = static_cast<const VarStatement&>(node);
             std::cout << "Assignment" << std::endl;
-            std::cout << prefix << "  Variable Name: " << assignment.variable_name << std::endl;
+            //std::cout << prefix << "  Variable Name: " << assignment.variable_name.size() << std::endl;
             print_ast(assignment.value, prefix + "  "); // Print the assigned value
             break;
         }
@@ -64,13 +63,21 @@ void print_ast(const ASTNode& node, const std::string& prefix = "") {
 }
 
 int main(int argc, char* argv[]) {
-    Lexer l(argv[1]);
-    Parser p(&l);
-    try {
-        auto r = p.parse_program();
-        print_ast(r, "");
-    } catch (const std::runtime_error e) {
-        std::cout << "Error: " << e.what() << std::endl;
+    ifstream file;
+    file.open(argv[1]);
+    string line, text;
+    if(file.is_open()) {
+        while(std::getline(file, line)) {
+            text += line + "\n";
+        }
+        Lexer l(text);
+        Parser p(&l);
+        try {
+            auto r = p.parse_program();
+            print_ast(r, "");
+        } catch (const std::runtime_error e) {
+            std::cout << "Error: " << e.what() << std::endl;
+        }
     }
     return 0;
 }

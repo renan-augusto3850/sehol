@@ -121,14 +121,14 @@ struct Parser {
     }
 
     Statement parse_statement() {
-        const std::string& a = current_token.value;
-        if (a == "if") {
+        const Token a = current_token;
+        if (a.value == "if") {
             return parse_if_statement();
-        } else if (a == "while") {
+        } else if (a.value == "while") {
             return parse_while_statement();
-        } else if (a == "for") {
+        } else if (a.value == "for") {
             return parse_for_statement();
-        } else if (a == "var") {
+        } else if (a.value == "var") {
             return parse_var_statement();
         } else {
             throw std::runtime_error("Unexpected statement type");
@@ -170,6 +170,7 @@ struct Parser {
         std::string variable_name = current_token.value;
         expect(IDENTIFIER);
         expect(ASSIGN);
+
         auto value = parse_expression();
         expect(SEMI);
         return VarStatement(variable_name, value);
@@ -187,7 +188,7 @@ struct Parser {
         auto left = parse_primary();
         while (current_token.kind == EQ || current_token.kind == LT ||
                current_token.kind == GT || current_token.kind == ADD ||
-               current_token.kind == SUB) {
+               current_token.kind == SUB || current_token.kind == INTEGER) {
             std::string op = current_token.value;
             advance();
             auto right = parse_primary();
@@ -204,9 +205,6 @@ struct Parser {
                 return StringLiteral(current_token.value);
             case IDENTIFIER:
                 return Variable(current_token.value);
-            default:
-                throw std::runtime_error("Expected INTEGER, STRING, or IDENTIFIER token.");
         }
-        advance();
     }
 };

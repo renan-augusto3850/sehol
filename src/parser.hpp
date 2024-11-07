@@ -17,6 +17,7 @@ enum class NodeType {
 
 struct ASTNode {
     NodeType type;
+    virtual ~ASTNode() = default;
     ASTNode(NodeType type) : type(type) {}
 };
 
@@ -100,6 +101,7 @@ struct Parser {
 
     void expect(TokenKind kind) {
         if (current_token.kind != kind) {
+            cout << current_token.kind << ' ' << kind << ' ' << current_token.value << endl;
             throw std::runtime_error("Expected token: " + tokenkind_readable(kind));
         }
         advance();
@@ -131,7 +133,7 @@ struct Parser {
         } else if (a.value == "var") {
             return parse_var_statement();
         } else {
-            throw std::runtime_error("Unexpected statement type");
+            throw std::runtime_error("Unexpected statement type: " + a.value);
         }
     }
 
@@ -188,7 +190,8 @@ struct Parser {
         auto left = parse_primary();
         while (current_token.kind == EQ || current_token.kind == LT ||
                current_token.kind == GT || current_token.kind == ADD ||
-               current_token.kind == SUB || current_token.kind == INTEGER) {
+               current_token.kind == SUB || current_token.kind == INTEGER ||
+               current_token.kind == IDENTIFIER) {
             std::string op = current_token.value;
             advance();
             auto right = parse_primary();

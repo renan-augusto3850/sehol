@@ -2,7 +2,7 @@
   <img alt="Sehol" src="./image/logo_color.png" />
 </div>
 
-<h3 align="center">Seahorse Language</h3>
+<h3 align="center">Sea Horse Language</h3>
 <p align="center">Linguagem de programação compilada com foco em simplicidade e praticidade.</p>
 
 ## Introdução

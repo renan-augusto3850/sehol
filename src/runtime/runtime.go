@@ -1,7 +1,10 @@
 package runtime
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 )
 
 type Var struct {
@@ -10,24 +13,34 @@ type Var struct {
 	Scope int16
 }
 
-func Run(ast []map[string]interface{}, scope int16) {
+func Run(ast []map[string]interface{}, scope int16) interface{} {
 	varsTable := make(map[string]Var)
 	for _, node := range ast {
 		name := node["name"].(string)
 		switch {
 		case name == "varDeclaration":
 			var id = node["id"].(string)
-			var value = node["value"].(string)
-			var typeOfVar = node["type"].(string)
-			varsTable[id] = Var{
-				V:     value,
-				Type:  typeOfVar,
-				Scope: scope,
+			if value, ok := node["value"].(string); ok {
+				var typeOfVar = node["type"].(string)
+				varsTable[id] = Var{
+					V:     value,
+					Type:  typeOfVar,
+					Scope: scope,
+				}
+				continue
+			} else if valueMap, ok := node["value"].(map[string]interface{}); ok {
+				var typeOfVar = node["type"].(string)
+				varsTable[id] = Var{
+					V:     Run([]map[string]interface{}{valueMap}, 0),
+					Type:  typeOfVar,
+					Scope: scope,
+				}
+				continue
 			}
-			continue
 		case name == "fnCall":
 			var call = node["call"].(string)
-			if call == "printLog" {
+			switch call {
+			case "printLog":
 				args := node["args"].([]map[string]interface{})
 				for _, arg := range args {
 					w := arg["w"].(string)
@@ -39,7 +52,15 @@ func Run(ast []map[string]interface{}, scope int16) {
 					}
 				}
 				fmt.Print("\n")
+			case "input":
+				args := node["args"].([]map[string]interface{})
+				fmt.Print(args[0]["w"])
+				reader := bufio.NewReader(os.Stdin)
+				text, _ := reader.ReadString('\n')
+				text = strings.Replace(text, "\n", "", -1)
+				return text
 			}
 		}
 	}
+	return nil
 }

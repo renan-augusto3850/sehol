@@ -1,0 +1,2 @@
+var text = input("Digite algo:");
+printLog("Você digitou:", text);

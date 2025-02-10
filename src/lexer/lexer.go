@@ -60,5 +60,6 @@ func Lexer(input string) []Tokens.Tokens {
 		}
 		i++
 	}
+	tree = append(tree, Tokens.Tokens{Kind: "EOF", Value: "", Index: 0})
 	return tree
 }

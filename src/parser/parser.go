@@ -22,8 +22,7 @@ func Parser(tree []Tokens.Tokens) []map[string]interface{} {
 
 	expect := func(t string) {
 		if t != currentToken.Value {
-			fmt.Println("SeholSyntaxError: Is expected " + t + ", but we got" + currentToken.Value + ".")
-			return
+			panic("SeholSyntaxError: Is expected " + t + ", but we got" + currentToken.Value + ".")
 		}
 	}
 
@@ -151,6 +150,7 @@ func Parser(tree []Tokens.Tokens) []map[string]interface{} {
 			}
 			advance()
 		}
+
 		advance()
 		expect(";")
 		advance()
@@ -173,31 +173,36 @@ func Parser(tree []Tokens.Tokens) []map[string]interface{} {
 		}
 		expect("=")
 		advance()
-		var value string
+		value := interface{}("")
 		if currentToken.Value == "[" {
 			for currentToken.Value != "]" {
 				if currentToken.Kind == "EOF" {
 					fmt.Println("SeholSyntaxError: You miss an \"]\".")
 				}
-				value += currentToken.Value
+				value = value.(string) + currentToken.Value
 				advance()
 			}
-			value += "]"
+			value = value.(string) + "]"
 			advance()
 			expect(";")
 			advance()
 		} else if currentToken.Value == "-" {
-			value += currentToken.Value
+			value = value.(string) + currentToken.Value
 			advance()
-			value += currentToken.Value
+			value = value.(string) + currentToken.Value
 			advance()
 			expect(";")
 			advance()
 		} else {
-			value = currentToken.Value
-			advance()
-			expect(";")
-			advance()
+			value = interface{}(statement())
+			if valueOf, ok := value.(map[string]interface{}); ok {
+				if valueOf["w"] != nil {
+					value = valueOf["w"]
+					advance()
+					expect(";")
+					advance()
+				}
+			}
 		}
 		// if v, ok := value.(map[string]interface{}); ok {
 		// 	value = v["Value"]
@@ -218,10 +223,21 @@ func Parser(tree []Tokens.Tokens) []map[string]interface{} {
 	statement = func() map[string]interface{} {
 		if currentToken.Value == "var" {
 			return parseVar()
+
 		} else if currentToken.Kind == "Identifier" {
 			return parseFn()
+		} else {
+			if currentToken.Kind == "EOF" {
+				return nil
+			}
+			if currentToken.Kind == "String" {
+				return map[string]interface{}{
+					"w":   currentToken.Value,
+					"str": true,
+				}
+			}
+			return expression()
 		}
-		return nil
 	}
 
 	var result = []map[string]interface{}{}

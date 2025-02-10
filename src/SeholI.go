@@ -25,5 +25,6 @@ func main() {
 	tokens := lexer.Lexer(string(dat))
 
 	ast := parser.Parser(tokens)
+
 	runtime.Run(ast, 0)
 }

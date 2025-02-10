@@ -1,0 +1,4 @@
+var test = input("Seu nome:");
+if("str" == "str") {
+    printLog(test);
+}

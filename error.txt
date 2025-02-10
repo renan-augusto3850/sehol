@@ -1,0 +1,23 @@
+pile: error at .\test.pile:1:3:
+    |    runtime error:
+    |        operation `+` expects 2 element(s) on top of the 
+    |        stack but got a different amount. 
+    +    try checking the values before the operation.
+
+
+Sehol: ERROR: Syntax Error:
+     | Unknown syntax in the scope of code.
+     |
+45   | unknown line
+       ^-----------
+       help: Remove unnecessary line
+       See the docs: https://docs.sehol.com/error/
+
+Error with unknown syntax:
+
+SeholSyntaxError<45>: Unknown syntax in the scope of code.
+    unknown line
+    ^^^^^^^^^^^^
+Recomendations:
+    - Remove unnecessary lines.
+    - This line have an unknown command, see the docs: <link>.

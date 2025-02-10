@@ -1,0 +1,6 @@
+var i = input("Seu nome:");
+if(6 + 1 == 5 + 2) {
+    printLog(i);
+}
+printLog("Isso significa muito para você");
+printLog(i);

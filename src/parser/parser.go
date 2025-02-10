@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"regexp"
 	Tokens "sehol/tokens"
 )
 
@@ -14,13 +15,15 @@ func Parser(tree []Tokens.Tokens) []map[string]interface{} {
 			index++
 			currentToken = tree[index]
 		} else {
-			fmt.Errorf("Sehol: Advance exceed bounds.")
+			fmt.Println("Sehol: Advance exceed bounds.")
+			return
 		}
 	}
 
 	expect := func(t string) {
 		if t != currentToken.Value {
-			fmt.Errorf("SeholSyntaxError: Is expected " + t + ", but we got" + currentToken.Value + ".")
+			fmt.Println("SeholSyntaxError: Is expected " + t + ", but we got" + currentToken.Value + ".")
+			return
 		}
 	}
 
@@ -99,6 +102,27 @@ func Parser(tree []Tokens.Tokens) []map[string]interface{} {
 		return result
 	}
 
+	typeThis := func(t any) string {
+		tokenTypes := []struct {
+			regex *regexp.Regexp
+			typ   string
+		}{
+			{regexp.MustCompile(`^\d+`), "Number"},
+			{regexp.MustCompile(`^(true|false)$`), "Boolean"},
+			{regexp.MustCompile(`^\[([^\]]*)\]$`), "ListArray"},
+			{regexp.MustCompile(`^[a-zA-Z_]\w*`), "String"},
+		}
+		for _, tokenType := range tokenTypes {
+			if tokenType.regex.MatchString(fmt.Sprintf("%v", t)) {
+				return tokenType.typ
+			}
+		}
+		// if _, ok := t.(map[string]interface{})["call"]; ok {
+		// 	return "nativeFn"
+		// }
+		return ""
+	}
+
 	parseFn = func() map[string]interface{} {
 		var call = currentToken.Value
 		advance()
@@ -117,7 +141,7 @@ func Parser(tree []Tokens.Tokens) []map[string]interface{} {
 						for currentToken.Value != "]" {
 							advance()
 							if currentToken.Kind == "EOF" {
-								fmt.Errorf("SeholSyntaxError: You miss an \"]\".")
+								fmt.Println("SeholSyntaxError: You miss an \"]\".")
 							}
 							indexArray += currentToken.Value
 						}
@@ -137,8 +161,64 @@ func Parser(tree []Tokens.Tokens) []map[string]interface{} {
 		}
 	}
 
+	parseVar := func() map[string]interface{} {
+		advance()
+		var id = currentToken.Value
+		advance()
+		var typeOfVar string
+		if currentToken.Value == ":" {
+			advance()
+			typeOfVar = currentToken.Value
+			advance()
+		}
+		expect("=")
+		advance()
+		var value string
+		if currentToken.Value == "[" {
+			for currentToken.Value != "]" {
+				if currentToken.Kind == "EOF" {
+					fmt.Println("SeholSyntaxError: You miss an \"]\".")
+				}
+				value += currentToken.Value
+				advance()
+			}
+			value += "]"
+			advance()
+			expect(";")
+			advance()
+		} else if currentToken.Value == "-" {
+			value += currentToken.Value
+			advance()
+			value += currentToken.Value
+			advance()
+			expect(";")
+			advance()
+		} else {
+			value = currentToken.Value
+			advance()
+			expect(";")
+			advance()
+		}
+		// if v, ok := value.(map[string]interface{}); ok {
+		// 	value = v["Value"]
+		// }
+		var valueType = typeThis(value)
+		if typeOfVar != "" && valueType != typeOfVar {
+			const errorMsg = `SeholRuntimeError: The attribution of type \"${valueType}\" is different from the type of variable \"${id}\" that is \"${type}\".`
+			fmt.Println(errorMsg)
+		}
+		return map[string]interface{}{
+			"name":  "varDeclaration",
+			"id":    id,
+			"type":  valueType,
+			"value": value,
+		}
+	}
+
 	statement = func() map[string]interface{} {
-		if currentToken.Kind == "Identifier" {
+		if currentToken.Value == "var" {
+			return parseVar()
+		} else if currentToken.Kind == "Identifier" {
 			return parseFn()
 		}
 		return nil

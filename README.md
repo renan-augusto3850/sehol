@@ -1,39 +1,33 @@
-<div align="center">
-  <img alt="Sehol" src="./image/logo_color.png" />
-</div>
+<h1 align="center">Seahorse Programming Language</h1>
+<h4 align="center"><i>Também disponível em <a href="./README_PTBR.md">Português</a>.</i></h4>
+<p align="center">Transpiled programming language with a focus on simplicity and practicity.</p>
 
-<h3 align="center">Seahorse Language</h3>
-<p align="center">Linguagem de programação compilada com foco em simplicidade e praticidade.</p>
+## Introduction
+Seahorse is a programming language designed for creating simple and versatile scripts.
 
-## Introdução
+Seahorse is a language transpiled into the [Lua](https://www.lua.org) programming language.
 
-- Sehol foi criado para:
-  - Integrar a facilidade das linguagens web para o desenvolvimento nativo.
-  - Integrar uma curva mais facil de aprendizado usando conceitos já conhecidos.
-  - Aproveitar da perfomance das linguagens compiladas em um código simples.
+The code in this repository implements a simple compiler for the Seahorse language in Go.
 
-## Utilizando o Sehol
-O código neste repositório implementa um compilador simples para a linguagem Sehol em C++.
+Unfortunately, the compiler is not yet finished, let alone stable. Therefore, I do not recommend that you try to run any of the code in this repository **for now**.
 
-Infelizmente o compilador ainda não está terminado e muito menos em estabilidade. Portanto, não recomendo a você tentar executar qualquer código que esteja nesse repositório **por enquanto**.
-
-## Exemplos
+## Examples
 - Hello World:
   ```
   printLog("Hello World!");
   ```
-- Variaveis:
+- Variables:
   ```
   var i = "hello";
   printLog(i);
   ```
 - I/O:
   ```
-  var i = input("Digite seu nome:");
+  var i = input("Enter your name:");
   printLog(i);
   ```
 
-Mais exemplos estão por vir...
+More examples soon...
 
 ---
 

@@ -1,2 +1,2 @@
 var text = input("Digite algo:");
-printLog("Você digitou:", text);
+printLog("Voce digitou:", text);

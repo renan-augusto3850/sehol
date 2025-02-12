@@ -41,17 +41,17 @@ func Parser(tree []Token.Token) []map[string]interface{} {
 	factor = func() map[string]interface{} {
 		var token = currentToken
 		var index any
-		if token.Kind == "Number" || token.Kind == "Identifier" || token.Kind == "String" {
+		if token.Kind == Token.TOKEN_NUMERIC || token.Kind == Token.TOKEN_ID || token.Kind == Token.TOKEN_STRING {
 			advance()
 			if currentToken.Value == "[" {
 				advance()
 				index = expression()
 			}
 			return map[string]any{"token": token, "index": index}
-		} else if token.Kind == "openParen" {
+		} else if token.Kind == Token.TOKEN_OPENPAREN {
 			advance()
 			result := expression()
-			if currentToken.Kind == "closeParen" {
+			if currentToken.Kind == Token.TOKEN_CLOSEPAREN {
 				advance()
 				return result
 			}
@@ -63,17 +63,17 @@ func Parser(tree []Token.Token) []map[string]interface{} {
 		var result = factor()
 		var token = currentToken
 		var index any
-		if token.Kind == "Number" || token.Kind == "Identifier" || token.Kind == "String" {
+		if token.Kind == Token.TOKEN_NUMERIC || token.Kind == Token.TOKEN_ID || token.Kind == Token.TOKEN_STRING {
 			advance()
-			if currentToken.Kind == "[" {
+			if currentToken.Value == "[" {
 				advance()
 				index = expression()
 			}
 			return map[string]interface{}{"token": token, "index": index}
-		} else if token.Kind == "openParen" {
+		} else if token.Kind == Token.TOKEN_OPENPAREN {
 			advance()
 			result = expression()
-			if currentToken.Kind == "closeParen" {
+			if currentToken.Kind == Token.TOKEN_CLOSEPAREN {
 				advance()
 				return result
 			}
@@ -83,9 +83,9 @@ func Parser(tree []Token.Token) []map[string]interface{} {
 
 	expression = func() map[string]interface{} {
 		var result = term()
-		for currentToken.Value == "plusOp" || currentToken.Kind == "minusOp" {
+		for currentToken.Kind == Token.TOKEN_PLUS || currentToken.Kind == Token.TOKEN_MINUS {
 			var token = currentToken
-			if token.Kind == "plusOp" {
+			if token.Kind == Token.TOKEN_PLUS {
 				advance()
 				result = map[string]interface{}{
 					"name":  "expression",
@@ -93,7 +93,7 @@ func Parser(tree []Token.Token) []map[string]interface{} {
 					"left":  result,
 					"right": term(),
 				}
-			} else if token.Kind == "minusOp" {
+			} else if token.Kind == Token.TOKEN_MINUS {
 				advance()
 				result = map[string]interface{}{
 					"name":  "expression",
@@ -138,20 +138,20 @@ func Parser(tree []Token.Token) []map[string]interface{} {
 		for currentToken.Value != ")" {
 			if currentToken.Value != "," && currentToken.Value != "[" && currentToken.Value != "]" {
 				if index+1 < len(tree) && tree[index+1].Value != "[" {
-					args = append(args, map[string]interface{}{"w": currentToken.Value, "str": currentToken.Kind == "String"})
+					args = append(args, map[string]interface{}{"w": currentToken.Value, "str": currentToken.Kind == Token.TOKEN_STRING})
 				} else {
 					var id = currentToken.Value
 					advance()
 					if currentToken.Value == "[" {
 						for currentToken.Value != "]" {
 							advance()
-							if currentToken.Kind == "EOF" {
+							if currentToken.Kind == Token.TOKEN_EOF {
 								fmt.Println("Seahorse: SyntaxError: You miss a \"]\".")
 							}
 							indexArray += currentToken.Value
 						}
 					}
-					args = append(args, map[string]interface{}{"w": []string{id, indexArray}, "str": currentToken.Kind == "String"})
+					args = append(args, map[string]interface{}{"w": []string{id, indexArray}, "str": currentToken.Kind == Token.TOKEN_STRING})
 				}
 			}
 			advance()
@@ -182,7 +182,7 @@ func Parser(tree []Token.Token) []map[string]interface{} {
 		value := interface{}("")
 		if currentToken.Value == "[" {
 			for currentToken.Value != "]" {
-				if currentToken.Kind == "EOF" {
+				if currentToken.Kind == Token.TOKEN_EOF {
 					fmt.Println("Seahorse: SyntaxError: You miss a \"]\".")
 				}
 				value = value.(string) + currentToken.Value
@@ -230,13 +230,13 @@ func Parser(tree []Token.Token) []map[string]interface{} {
 		if currentToken.Value == "var" {
 			return parseVar()
 
-		} else if currentToken.Kind == "Identifier" {
+		} else if currentToken.Kind == Token.TOKEN_ID {
 			return parseFn()
 		} else {
-			if currentToken.Kind == "EOF" {
+			if currentToken.Kind == Token.TOKEN_EOF {
 				return nil
 			}
-			if currentToken.Kind == "String" {
+			if currentToken.Kind == Token.TOKEN_STRING {
 				return map[string]interface{}{
 					"w":   currentToken.Value,
 					"str": true,

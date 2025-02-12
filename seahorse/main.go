@@ -17,8 +17,9 @@ func check(e error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Seahorse: You miss to specify the file. Usage: SeholI <filename>.sehol")
-		return
+		fmt.Printf("Seahorse: Usage: %s FILENAME\n", os.Args[0])
+		fmt.Println("Seahorse: Expected positional argument FILENAME.")
+		os.Exit(1)
 	}
 	file := os.Args[1]
 	dat, err := os.ReadFile(file)

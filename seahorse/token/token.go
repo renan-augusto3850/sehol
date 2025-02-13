@@ -1,4 +1,4 @@
-package Token
+package token
 
 const (
 	TOKEN_ID      = iota

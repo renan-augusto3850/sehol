@@ -6,7 +6,6 @@ import (
 	"seahorse/lexer"
 	"seahorse/parser"
 	"seahorse/runtime"
-	Tokens "seahorse/token"
 )
 
 func check(e error) {
@@ -25,10 +24,15 @@ func main() {
 	dat, err := os.ReadFile(file)
 	check(err)
 	
-	var tokens []Tokens.Token
-	tokens = lexer.Lexer(string(dat))
+	tokens := lexer.Lexer(string(dat))
 
-	ast := parser.Parser(tokens)
+	a := parser.Parser {
+		Index: 0,
+		Tree: tokens,
+		CurrentToken: &tokens[0],
+	}
+
+	ast := parser.Parse(a)
 
 	runtime.Run(ast, 0)
 }

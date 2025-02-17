@@ -2,256 +2,281 @@ package parser
 
 import (
 	"fmt"
-	"os"
-	"regexp"
-	Token "seahorse/token"
+	"seahorse/token"
 )
 
+const (
+	NODE_BINOP   = iota // a + b, b / (a + x)
+	NODE_UNOP    = iota // !a, -b
+	NODE_NUMERIC = iota // any numeric value
+	NODE_STRING  = iota // "string"
+	NODE_ID      = iota // foo, bar, baz
+	NODE_FUNCALL = iota // foo(), bar(), baz()
+	NODE_VAR     = iota // var foo = bar
+)
+
+// Node is the universal construction that can hold any
+// type of structure parsed by Seahorse. Depending on
+// the field Kind, the other fields are used in different ways
+type Node struct {
+	Kind  int
+	Value string
+	Left  *Node
+	Right *Node
+	List []*Node
+}
+
 type Parser struct {
-	Tree []Token.Token
-	Index int
-	CurrentToken *Token.Token
+	tokens []token.Token
+	pos    int
 }
 
-func advance(parser Parser) {
-	if len(parser.Tree) >= parser.Index {
-		parser.Index++
-		parser.CurrentToken = &parser.Tree[parser.Index]
-		fmt.Println(parser.CurrentToken)
-	}
-}
-
-func factor(parser Parser) map[string]interface{} {
-	var token = parser.CurrentToken
-	var index any
-	if token.Kind == Token.TOKEN_NUMERIC || token.Kind == Token.TOKEN_ID || token.Kind == Token.TOKEN_STRING {
-		advance(parser)
-		 if parser.CurrentToken.Value == "[" {
-			advance(parser)
-			index = expression(parser)
-		}
-		return map[string]any{"token": token, "index": index}
-	} else if token.Kind == Token.TOKEN_OPENPAREN {
-		advance(parser)
-		result := expression(parser)
-		if parser.CurrentToken.Kind == Token.TOKEN_CLOSEPAREN {
-			advance(parser)
-			return result
-		}
-	}
-	return nil
-}
-
-
-func term(parser Parser) map[string]interface{} {
-	var result = factor(parser)
-	var token = parser.CurrentToken
-	var index any
-	if token.Kind == Token.TOKEN_NUMERIC || token.Kind == Token.TOKEN_ID || token.Kind == Token.TOKEN_STRING {
-		advance(parser)
-		if parser.CurrentToken.Value == "[" {
-			advance(parser)
-			index = expression(parser)
-		}
-		return map[string]interface{}{"token": token, "index": index}
-	} else if token.Kind == Token.TOKEN_OPENPAREN {
-		advance(parser)
-		result = expression(parser)
-		if parser.CurrentToken.Kind == Token.TOKEN_CLOSEPAREN {
-			advance(parser)
-			return result
-		}
-	}
-	return nil
-}
-
-func expect(parser Parser, t string) {
-	if t != parser.CurrentToken.Value {
-		x := parser.CurrentToken.Value
-		if len(x) <= 0 {
-			x = "EOF"
-		}
-		fmt.Println("Seahorse: SyntaxError: Expected " + t + ", but got " + x + ".")
-		os.Exit(1)
+// Creates new Parser instance.
+func NewParser(tokens []token.Token) *Parser {
+	return &Parser{
+		tokens: tokens,
+		pos:    0,
 	}
 }
 
-func expression(parser Parser) map[string]interface{} {
-	var result = term(parser)
-	for parser.CurrentToken.Kind == Token.TOKEN_PLUS || parser.CurrentToken.Kind == Token.TOKEN_MINUS {
-		var token = parser.CurrentToken
-		if token.Kind == Token.TOKEN_PLUS {
-			advance(parser)
-			result = map[string]interface{}{
-				"name":  "expression",
-				"op":    "plusOp",
-				"left":  result,
-				"right": term(parser),
-			}
-		} else if token.Kind == Token.TOKEN_MINUS {
-			advance(parser)
-			result = map[string]interface{}{
-				"name":  "expression",
-				"op":    "minusOp",
-				"left":  result,
-				"right": term(parser),
-			}
-		}
+// Returns the token at the pointer of the parser.
+func (p *Parser) currentToken() token.Token {
+	if p.pos >= len(p.tokens) {
+		return token.Token{Kind: token.TOKEN_EOF}
 	}
-	advance(parser)
-	return result
+	return p.tokens[p.pos]
 }
 
-func parseFn(parser Parser) map[string]interface{} {
-	var call = parser.CurrentToken.Value
-	advance(parser)
-	expect(parser, "(")
-	advance(parser)
-	var args = []map[string]interface{}{}
-	var indexArray = ""
-	for parser.CurrentToken.Value != ")" {
-		if parser.CurrentToken.Value != "," && parser.CurrentToken.Value != "[" && parser.CurrentToken.Value != "]" {
-			if parser.Index+1 < len(parser.Tree) && parser.Tree[parser.Index+1].Value != "[" {
-				args = append(args, map[string]interface{}{"w": parser.CurrentToken.Value, "str": parser.CurrentToken.Kind == Token.TOKEN_STRING})
-			} else {
-				var id = parser.CurrentToken.Value
-				advance(parser)
-				if parser.CurrentToken.Value == "[" {
-					for parser.CurrentToken.Value != "]" {
-						advance(parser)
-						if parser.CurrentToken.Kind == Token.TOKEN_EOF {
-							fmt.Println("Seahorse: SyntaxError: You miss a \"]\".")
-						}
-						indexArray += parser.CurrentToken.Value
-					}
-				}
-				args = append(args, map[string]interface{}{"w": []string{id, indexArray}, "str": parser.CurrentToken.Kind == Token.TOKEN_STRING})
-			}
-		}
-		advance(parser)
-	}
-
-	advance(parser)
-	expect(parser, ";")
-	advance(parser)
-	return map[string]interface{}{
-		"name": "fnCall",
-		"call": call,
-		"args": args,
-	}
+// Advances the pointer of the parser.
+func (p *Parser) consume() {
+	p.pos++
 }
 
-func typeThis(t any) string {
-	tokenTypes := []struct {
-		regex *regexp.Regexp
-		typ   string
-	}{
-		{regexp.MustCompile(`^\d+`), "Number"},
-		{regexp.MustCompile(`^(true|false)$`), "Boolean"},
-		{regexp.MustCompile(`^\[([^\]]*)\]$`), "ListArray"},
-		{regexp.MustCompile(`^[a-zA-Z_]\w*`), "String"},
+var binaryOperation = []int{
+	token.TOKEN_PLUS,
+	token.TOKEN_MINUS,
+	token.TOKEN_MUL,
+	token.TOKEN_DIV,
+	token.TOKEN_EQ,
+	token.TOKEN_NE,
+	token.TOKEN_LT,
+	token.TOKEN_GT,
+	token.TOKEN_GE,
+	token.TOKEN_LE,
+}
+// var unaryOperation = []int{ token.TOKEN_NOT, token.TOKEN_MINUS }
+
+// Returns precedence according to proper binary operation Token Kind.
+func getBinaryOperationPrecedence(kind int) int {
+	switch kind {
+	case token.TOKEN_EQ: return 2;
+	case token.TOKEN_NE: return 2;
+	case token.TOKEN_GE: return 2;
+	case token.TOKEN_LT: return 2;
+	case token.TOKEN_GT: return 2;
+	case token.TOKEN_LE: return 2;
+	case token.TOKEN_PLUS: return 3;
+	case token.TOKEN_MINUS: return 3;
+	case token.TOKEN_MUL: return 4;
+	case token.TOKEN_DIV: return 4;
 	}
-	for _, tokenType := range tokenTypes {
-		if tokenType.regex.MatchString(fmt.Sprintf("%v", t)) {
-			return tokenType.typ
-		}
-	}
-	// if _, ok := t.(map[string]interface{})["call"]; ok {
-	// 	return "nativeFn"
-	// }
-	return ""
+	return -1;
 }
 
-func parseVar(parser Parser) map[string]interface{} {
-	advance(parser)
-	var id = parser.CurrentToken.Value
-	advance(parser)
-	var typeOfVar string
-	if parser.CurrentToken.Value == ":" {
-		advance(parser)
-		typeOfVar = parser.CurrentToken.Value
-		advance(parser)
+// Returns precedence according to proper unary operation Token Kind.
+func getUnaryOperationPrecedence(kind int) int {
+	switch kind {
+	case token.TOKEN_NOT: return 5;
+	case token.TOKEN_MINUS: return 5;
 	}
-	expect(parser, "=")
-	advance(parser)
-	value := interface{}("")
-	if parser.CurrentToken.Value == "[" {
-		for parser.CurrentToken.Value != "]" {
-			if parser.CurrentToken.Kind == Token.TOKEN_EOF {
-				fmt.Println("Seahorse: SyntaxError: You miss a \"]\".")
-			}
-			value = value.(string) + parser.CurrentToken.Value
-			advance(parser)
-		}
-		value = value.(string) + "]"
-		advance(parser)
-		expect(parser, ";")
-		advance(parser)
-	} else if parser.CurrentToken.Value == "-" {
-		value = value.(string) + parser.CurrentToken.Value
-		advance(parser)
-		value = value.(string) + parser.CurrentToken.Value
-		advance(parser)
-		expect(parser, ";")
-		advance(parser)
-	} else {
-		value = interface{}(statement(parser))
-		if valueOf, ok := value.(map[string]interface{}); ok {
-			if valueOf["w"] != nil {
-				value = valueOf["w"]
-				advance(parser)
-				expect(parser, ";")
-				advance(parser)
-			}
-		}
-	}
-	// if v, ok := value.(map[string]interface{}); ok {
-	// 	value = v["Value"]
-	// }
-	var valueType = typeThis(value)
-	if typeOfVar != "" && valueType != typeOfVar {
-		const errorMsg = `Seahorse: RuntimeError: The attribution of type \"${valueType}\" is different from the type of variable \"${id}\" that is \"${type}\".`
-		fmt.Println(errorMsg)
-	}
-	return map[string]interface{}{
-		"name":  "varDeclaration",
-		"id":    id,
-		"type":  valueType,
-		"value": value,
-	}
+	return -1;
 }
 
-func statement(parser Parser) map[string]interface{} {
-	if parser.CurrentToken.Value == "var" {
-		return parseVar(parser)
-
-	} else if parser.CurrentToken.Kind == Token.TOKEN_ID {
-		return parseFn(parser)
-	} else {
-		if parser.CurrentToken.Kind == Token.TOKEN_EOF {
+// Parse expressions separated by ,
+func (p *Parser) parseArgumentList() []*Node {
+	list := []*Node{}
+	first := p.parseExpression(0)
+	if first != nil {
+		list = append(list, first)
+	}
+	for p.expectTokens([]int{ token.TOKEN_COMMA }) {
+		if p.currentToken().Kind == token.TOKEN_CLOSEPAREN {
+			break
+		}
+		p.consume()
+		x := p.parseExpression(0)
+		if x == nil {
+			fmt.Println("Error: Expected expression after ','")
 			return nil
 		}
-		if parser.CurrentToken.Kind == Token.TOKEN_STRING {
-			return map[string]interface{}{
-				"w":   parser.CurrentToken.Value,
-				"str": true,
+		list = append(list, x)
+	}
+	return list
+}
+
+// Parse arbitrary expression
+func (p *Parser) parseExpression(precedence int) *Node {
+	node := p.parseTerm()
+	if node == nil { return nil }
+	if p.currentToken().Kind == token.TOKEN_OPENPAREN && node.Kind == NODE_ID {
+		p.consume()
+		list := p.parseArgumentList()
+		if list == nil { return nil }
+		if !p.expectToken(token.TOKEN_CLOSEPAREN) {
+			fmt.Println("Error: Expected ')' after argument list.")
+			return nil
+		}
+		p.consume()
+		node = &Node{
+			Kind:  NODE_FUNCALL,
+			Value: node.Value,
+			List:  list,
+		}
+	} else {
+		for p.expectTokens(binaryOperation) {
+			next_prec := getBinaryOperationPrecedence(p.currentToken().Kind)
+			if next_prec < precedence {
+				break
+			}
+			operator := p.currentToken()
+			p.consume()
+			rightNode := p.parseExpression(next_prec)
+			if rightNode == nil { return nil }
+			node = &Node{
+				Kind:  NODE_BINOP,
+				Value: operator.Value,
+				Left:  node,
+				Right: rightNode,
 			}
 		}
-		return expression(parser)
+	}
+	return node
+}
+
+// Returns if a specific Token Kind is the current token's kind
+func (p *Parser) expectToken(kind int) bool {
+	return p.currentToken().Kind == kind
+}
+
+// Returns if one of the provided token kinds is the current token's kind
+func (p *Parser) expectTokens(kinds []int) bool {
+	var expects []bool;
+	for i := 0; i < len(kinds); i++ {
+		result := p.currentToken().Kind == kinds[i]
+		expects = append(expects, result);
+	}
+	for j := 0; j < len(expects); j++ {
+		if expects[j] {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Parse basic piece of an expression.
+func (p *Parser) parseTerm() *Node {
+	t := p.currentToken()
+	switch t.Kind {
+	case token.TOKEN_NUMERIC:
+		p.consume()
+		return &Node{
+			Kind:  NODE_NUMERIC,
+			Value: t.Value,
+		}
+	case token.TOKEN_NOT:
+		p.consume()
+		return &Node{
+			Kind:  NODE_UNOP,
+			Value: t.Value,
+			Right: p.parseExpression(getUnaryOperationPrecedence(token.TOKEN_NOT)),
+		}
+	case token.TOKEN_MINUS:
+		p.consume()
+		return &Node{
+			Kind:  NODE_UNOP,
+			Value: t.Value,
+			Right: p.parseExpression(getUnaryOperationPrecedence(token.TOKEN_MINUS)),
+		}
+	case token.TOKEN_OPENPAREN:
+		p.consume()
+		node := p.parseExpression(0)
+		if !p.expectToken(token.TOKEN_CLOSEPAREN) {
+			fmt.Println("Error: Expected ')' after expression.")
+			return nil
+		}
+		return node
+	case token.TOKEN_ID:
+		p.consume()
+		return &Node{
+			Kind:  NODE_ID,
+			Value: t.Value,
+		}
+	case token.TOKEN_STRING:
+		p.consume()
+		return &Node{
+			Kind:  NODE_STRING,
+			Value: t.Value,
+		}
+	}
+	fmt.Println("Error: Unexpected token:", t.Kind)
+	return nil
+}
+
+// Parse var statement
+func (p *Parser) parseVarStatement() *Node {
+	p.expectToken(token.TOKEN_VAR)
+	p.consume()
+	if !p.expectToken(token.TOKEN_ID) {
+		fmt.Println("Error: Expected identifier")
+		return nil
+	}
+	name := p.currentToken().Value
+	p.consume()
+	if !p.expectToken(token.TOKEN_ASSIGN) {
+		fmt.Println("Error: Expected =")
+		return nil
+	}
+	p.consume()
+	expr := p.parseExpression(0)
+	if expr == nil {
+		fmt.Println("Error: Expected expression")
+		return nil
+	}
+	if !p.expectEnd() {
+		fmt.Println("Error: Expected end of statement")
+		return nil
+	}
+	p.consume()
+	return &Node {
+		Kind: NODE_VAR,
+		Value: name,
+		Right: expr,
 	}
 }
 
-func Parse(parser Parser) []map[string]interface{} {
-	var result = []map[string]interface{}{}
-	var run = true
+func (p *Parser) expectEnd() bool {
+	return p.expectTokens([]int{token.TOKEN_EOF, token.TOKEN_LF})
+}
 
-	for run {
-		call := statement(parser)
-		if call != nil {
-			result = append(result, call)
-		} else {
-			run = false
+// Parse
+func (p *Parser) Parse() []*Node {
+	nodes := []*Node{}
+	for p.currentToken().Kind != token.TOKEN_EOF {
+		switch p.currentToken().Kind {
+		case token.TOKEN_VAR:
+			x := p.parseVarStatement()
+			if x == nil { return nil }
+			nodes = append(nodes, x)
+		default:
+			x := p.parseExpression(0)
+			if x == nil { return nil }
+			if !p.expectEnd() {
+				fmt.Println("Error: Expected end of statement")
+				return nil
+			}
+			p.consume()
+			nodes = append(nodes, x)
 		}
 	}
-	return result
+	return nodes
 }

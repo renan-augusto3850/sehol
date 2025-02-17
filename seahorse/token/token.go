@@ -38,5 +38,7 @@ const (
 type Token struct {
 	Kind  int
 	Value string
-	Index int
+	Filename string
+	Line int
+	Col int
 }

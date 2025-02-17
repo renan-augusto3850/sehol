@@ -8,8 +8,8 @@ import (
 )
 
 func main() {
-	input := "var a = 10\nprint(a)"
-	tokens := lexer.Lexer(input)
+	input := "var a = 10\nprint(a"
+	tokens := lexer.Lexer(input, "file.se")
 	p := parser.NewParser(tokens)
 	ast := p.Parse()
 	if ast == nil {

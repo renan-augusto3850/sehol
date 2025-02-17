@@ -15,6 +15,15 @@ const (
 	NODE_VAR     = iota // var foo = bar
 )
 
+// Error function to log syntax errors.
+func (p *Parser) ParseError(message string) {
+	t := p.currentToken()
+	fmt.Println("Seahorse: Parse Error:")
+	value := "EOF"
+	if t.Kind != token.TOKEN_EOF { value = t.Value }
+	fmt.Printf("  Syntax Error at %s:%d:%d near %s:\n", t.Filename, t.Line, t.Col, value)
+	fmt.Printf("    %s\n", message)
+}
 // Node is the universal construction that can hold any
 // type of structure parsed by Seahorse. Depending on
 // the field Kind, the other fields are used in different ways
@@ -106,7 +115,7 @@ func (p *Parser) parseArgumentList() []*Node {
 		p.consume()
 		x := p.parseExpression(0)
 		if x == nil {
-			fmt.Println("Error: Expected expression after ','")
+			p.ParseError("Expected expression after ','")
 			return nil
 		}
 		list = append(list, x)
@@ -123,7 +132,7 @@ func (p *Parser) parseExpression(precedence int) *Node {
 		list := p.parseArgumentList()
 		if list == nil { return nil }
 		if !p.expectToken(token.TOKEN_CLOSEPAREN) {
-			fmt.Println("Error: Expected ')' after argument list.")
+			p.ParseError("Expected ')' after argument list.")
 			return nil
 		}
 		p.consume()
@@ -201,7 +210,7 @@ func (p *Parser) parseTerm() *Node {
 		p.consume()
 		node := p.parseExpression(0)
 		if !p.expectToken(token.TOKEN_CLOSEPAREN) {
-			fmt.Println("Error: Expected ')' after expression.")
+			p.ParseError("Expected ')' after expression.")
 			return nil
 		}
 		return node
@@ -218,7 +227,7 @@ func (p *Parser) parseTerm() *Node {
 			Value: t.Value,
 		}
 	}
-	fmt.Println("Error: Unexpected token:", t.Kind)
+	p.ParseError(fmt.Sprintf("Unexpected token: %d", t.Kind))
 	return nil
 }
 
@@ -227,23 +236,23 @@ func (p *Parser) parseVarStatement() *Node {
 	p.expectToken(token.TOKEN_VAR)
 	p.consume()
 	if !p.expectToken(token.TOKEN_ID) {
-		fmt.Println("Error: Expected identifier")
+		p.ParseError("Expected identifier")
 		return nil
 	}
 	name := p.currentToken().Value
 	p.consume()
 	if !p.expectToken(token.TOKEN_ASSIGN) {
-		fmt.Println("Error: Expected =")
+		p.ParseError("Expected =")
 		return nil
 	}
 	p.consume()
 	expr := p.parseExpression(0)
 	if expr == nil {
-		fmt.Println("Error: Expected expression")
+		p.ParseError("Expected expression")
 		return nil
 	}
 	if !p.expectEnd() {
-		fmt.Println("Error: Expected end of statement")
+		p.ParseError("Expected end of statement")
 		return nil
 	}
 	p.consume()
@@ -271,7 +280,7 @@ func (p *Parser) Parse() []*Node {
 			x := p.parseExpression(0)
 			if x == nil { return nil }
 			if !p.expectEnd() {
-				fmt.Println("Error: Expected end of statement")
+				p.ParseError("Expected end of statement")
 				return nil
 			}
 			p.consume()
